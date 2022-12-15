@@ -1,10 +1,10 @@
 export XDG_CONFIG_HOME=$HOME/.config
 VIM=$(which nvim)
 
-PERSONAL=$XDG_CONFIG_HOME/personal
-source $PERSONAL/env
+ZSH_SETUP=$XDG_CONFIG_HOME/zsh_setup
+source $ZSH_SETUP/env
 
-for i in `find -L $PERSONAL`; do
+for i in `find -L $ZSH_SETUP`; do
     source $i
 done
 
