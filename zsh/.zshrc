@@ -2,10 +2,11 @@ export ZSH="$HOME/.oh-my-zsh"
 
 HOST_NAME=batman
 ZSH_THEME="robbyrussell"
-ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=24' # check color map https://upload.wikimedia.org/wikipedia/commons/1/15/Xterm_256color_chart.svg
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#005f87' # check color map https://upload.wikimedia.org/wikipedia/commons/3/15/Xterm_256color_chart.svg
 
 
-plugins=(zsh-vi-mode git zsh-z zsh-autosuggestions zsh-nvm)
+
+plugins=(zsh-vi-mode git zsh-z zsh-autosuggestions zsh-nvm web-search)
 # history-substring-search zsh-syntax-highlighting
 # TODO Test the zsh-autosuggestions plugin and see if it makes me a better developer...
 
