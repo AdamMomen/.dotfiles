@@ -73,6 +73,7 @@ eslintify() {
 
 watchMeBaby() {
     files=$(echo "$1" | sed  's/,/ -w /g' | tr '\n' ' ')
-    nodemon -w $files -x $2
+    exec=`$2 | exit 1`
+    nodemon -w $files -x $exec
 }
 
