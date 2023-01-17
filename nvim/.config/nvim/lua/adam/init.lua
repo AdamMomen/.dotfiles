@@ -1,6 +1,6 @@
 require("adam.set")
 require("adam.packer")
-require("adam.neogit")
+require("adam.fugitive")
 require("adam.octo")
 --  require("adam.debugger")
 -- require("adam.rtp")
