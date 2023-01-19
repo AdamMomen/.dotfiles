@@ -3,10 +3,3 @@
 read -p "Enter Question:" query
 
 tmux neww bash -c "echo \"curl -X POST -H \"Content-Type: application/json\" -d '{ \"prompt\": \"$query\", \"model\": \"text-davinci-002\", \"api_key\": \"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\" }' \"https://api.openai.com/v1/engines/davinci/completions\" while [ : ]; do sleep1; done"
-
-
-tmux neww bash -c "echo `curl -s https://api.openai.com/v1/completions \
--H "Content-Type: application/json" \
--H "Authorization: Bearer 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" \
--d "{\"model\": \"text-davinci-003\", \"prompt\": \"$query\", \"temperature\": 1, \"max_tokens\": 4000}" \
-| jq '.choices | .[] | .text?' | sed 's/"//g'`"
