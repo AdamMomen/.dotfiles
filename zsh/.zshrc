@@ -6,7 +6,7 @@ ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#005f87' # check color map https://upload.wi
 
 
 
-plugins=(zsh-vi-mode git zsh-z zsh-autosuggestions zsh-nvm web-search)
+plugins=(git zsh-z zsh-autosuggestions zsh-nvm web-search)
 # history-substring-search zsh-syntax-highlighting
 # TODO Test the zsh-autosuggestions plugin and see if it makes me a better developer...
 
