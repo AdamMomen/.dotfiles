@@ -1,9 +1,35 @@
-#/usr/bin/bash
+#!/opt/homebrew/bin/python3
 
-read -p "Enter Question: " query
-echo `curl -s https://api.openai.com/v1/completions \
--H "Content-Type: application/json" \
--H "Authorization: Bearer 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" \
--d "{\"model\": \"text-davinci-003\", \"prompt\": \"$query\", \"temperature\": 1, \"max_tokens\": 4000}"
-# \ | jq '.choices | .[] | .text?' | sed 's/"//g' `
+import openai
+from decouple import config
 
+
+def interact_with_chatgpt():
+    while True:
+        user_input = input("You: ")
+        if user_input in ['exit', '!q', '^C', 'q']:
+            break
+
+        response = openai.Completion.create(
+            engine="text-davinci-002",
+            prompt=(f"You: {user_input}"),
+            temperature=0.7,
+            max_tokens=2048,
+            top_p=1,
+            frequency_penalty=1,
+            presence_penalty=1
+        )
+        print("ChatGPT: ", response["choices"][0]["text"])
+
+
+if __name__ == '__main__':
+    interact_with_chatgpt()
+
+
+# read -p "Enter Question: " query
+# API_KEY=""
+# echo `curl -s https://api.openai.com/v1/completions \
+# -H "Content-Type: application/json" \
+# -H "Authorization: Bearer $API_KEY" \
+# -d "{\"model\": \"text-davinci-003\", \"prompt\": \"$query\", \"temperature\": 1, \"max_tokens\": 4000}" \
+# | jq '.choices | .[] | .text?' | sed 's/"//g' `
