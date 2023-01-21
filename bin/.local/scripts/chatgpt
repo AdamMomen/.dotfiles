@@ -1,4 +1,4 @@
-#!/opt/homebrew/bin/python3
+#!/usr/bin/python3
 
 import openai
 import os
@@ -21,6 +21,12 @@ def interact_with_model(prompt, api_key, model="text-davinci-003"):
 
 if __name__ == "__main__":
     api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        with open(os.path.join(os.environ.get("HOME"), ".chatgpt"), "r") as f:
+            api_key = f.read().strip()
+            os.environ["OPENAI_API_KEY"] = api_key
+
+
     if '-h' in sys.argv or 'help' in sys.argv:
         print("usage: chatgpt {prompt}")
         sys.exit(1)

@@ -1,6 +1,7 @@
 #!/opt/homebrew/bin/python3
 import openai
-import os
+from os import environ, path
+
 
 def interact_with_chatgpt(api_key: str) -> None:
     openai.api_key = api_key
@@ -22,7 +23,10 @@ def interact_with_chatgpt(api_key: str) -> None:
 
 
 if __name__ == '__main__':
-    api_key = os.environ.get("OPENAI_API_KEY")
+    api_key = environ.get("OPENAI_API_KEY")
+    with open(path.join(environ.get("HOME"), ".chatgpt"), "r") as f:
+        api_key = f.read().strip()
+        environ["OPENAI_API_KEY"] = api_key
 
     if api_key:
         interact_with_chatgpt(api_key)
