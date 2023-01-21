@@ -1,5 +1,30 @@
-# api-key = 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
+#!/opt/homebrew/bin/python3
+import openai
+import os
 
-read -p "Enter Question:" query
+def interact_with_chatgpt(api_key: str) -> None:
+    openai.api_key = api_key
+    while True:
+        user_input = input("You: ")
+        if user_input in ['exit', '!q', '^c', ':q']:
+            break
 
-tmux neww bash -c "echo \"curl -X POST -H \"Content-Type: application/json\" -d '{ \"prompt\": \"$query\", \"model\": \"text-davinci-002\", \"api_key\": \"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\" }' \"https://api.openai.com/v1/engines/davinci/completions\" while [ : ]; do sleep1; done"
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=(f"You: {user_input}"),
+            temperature=0.7,
+            max_tokens=4000,
+            top_p=1,
+            frequency_penalty=1,
+            presence_penalty=1
+        )
+        print("ChatGPT: ", response["choices"][0]["text"])
+
+
+if __name__ == '__main__':
+    api_key = os.environ.get("OPENAI_API_KEY")
+
+    if api_key:
+        interact_with_chatgpt(api_key)
+    else:
+        print("API key not found.")
