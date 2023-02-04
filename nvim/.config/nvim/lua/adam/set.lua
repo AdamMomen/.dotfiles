@@ -42,11 +42,11 @@ vim.opt.colorcolumn = "80"
 
 vim.g.mapleader = " "
 
---vim.opt.wildignore = vim.opt.wildignore + "*.pyc"
---vim.opt.wildignore = vim.opt.wildignore + "*_build/*"
---vim.opt.wildignore = vim.opt.wildignore + "**/coverage/*"
---vim.opt.wildignore = vim.opt.wildignore + "**/node_modules/*"
---vim.opt.wildignore = vim.opt.wildignore + "**/android/*"
---vim.opt.wildignore = vim.opt.wildignore + "**/ios/*"
---vim.opt.wildignore = vim.opt.wildignore + "**/.git/*"
+vim.opt.wildignore = vim.opt.wildignore + "*.pyc"
+vim.opt.wildignore = vim.opt.wildignore + "*_build/*"
+vim.opt.wildignore = vim.opt.wildignore + "**/coverage/*"
+vim.opt.wildignore = vim.opt.wildignore + "**/node_modules/*"
+vim.opt.wildignore = vim.opt.wildignore + "**/android/*"
+vim.opt.wildignore = vim.opt.wildignore + "**/ios/*"
+vim.opt.wildignore = vim.opt.wildignore + "**/.git/*"
 
