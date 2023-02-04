@@ -42,7 +42,7 @@ cmp.setup({
     },
     formatting = {
         format = lspkind.cmp_format {
-            with_text = true,
+            with_text = false,
             menu = {
                 buffer = "[buf]",
                 nvim_lsp = "[LSP]",
@@ -56,22 +56,23 @@ cmp.setup({
 
     sources = {
         -- { name = "nvim_lua" },
-        { name = "luasnip" },
-        { name = "cmp_tabnine" },
-        { name = "nvim_lsp" },
         { name = "path" },
-        { name = "buffer", keyword_length = 5 },
+        { name = "nvim_lsp" },
+        -- { name = "cmp_tabnine" },
+        { name = "luasnip" },
+        -- { name = "buffer", keyword_length = 5 },
     },
 })
 
-local tabnine = require('cmp_tabnine.config')
-tabnine:setup({
-    max_lines = 1000,
-    max_num_results = 20,
-    sort = true,
-    run_on_every_keystroke = true,
-    snippet_placeholder = '..',
-})
+
+--local tabnine = require('cmp_tabnine.config')
+--tabnine:setup({
+    --max_lines = 1000,
+    --max_num_results = 20,
+    --sort = true,
+    --run_on_every_keystroke = true,
+    --snippet_placeholder = '..',
+--})
 
 
 local function config(_config)
@@ -187,7 +188,7 @@ require 'lspconfig'.tailwindcss.setup(config(
 -- }))
 
 -- who even uses this?
--- require'lspconfig'.rust_analyzer.setup(config({}))
+require'lspconfig'.rust_analyzer.setup(config({}))
 
 require 'lspconfig'.sumneko_lua.setup(config({
     settings = {
