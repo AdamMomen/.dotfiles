@@ -13,7 +13,7 @@ def interact_with_chatgpt(api_key: str) -> None:
         response = openai.Completion.create(
             engine="text-davinci-003",
             prompt=(f"You: {user_input}"),
-            temperature=0.7,
+            temperature=1,
             max_tokens=4000,
             top_p=1,
             frequency_penalty=1,
