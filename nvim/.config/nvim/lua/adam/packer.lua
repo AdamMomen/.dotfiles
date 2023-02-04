@@ -1,11 +1,12 @@
-local fn = vim.fn
-local install_path = fn.stdpath('data') .. '/site/pack/packer/start/packer.nvim'
-if fn.empty(fn.glob(install_path)) > 0 then
-    packer_bootstrap = fn.system({ 'git', 'clone', '--depth', '1', 'https://github.com/wbthomason/packer.nvim',
-        install_path })
-end
-
 return require("packer").startup(function()
+    use({
+        'rose-pine/neovim',
+        as = 'rose-pine',
+        config = function()
+            require("rose-pine").setup()
+            vim.cmd('colorscheme rose-pine')
+        end
+    })
     use("preservim/nerdcommenter")
     use("tpope/vim-fugitive")
     use("wbthomason/packer.nvim")
@@ -58,8 +59,8 @@ return require("packer").startup(function()
     use("mbbill/undotree")
 
     -- Colorscheme section
-    use("gruvbox-community/gruvbox")
-    use("folke/tokyonight.nvim")
+    -- use("gruvbox-community/gruvbox")
+    -- use("folke/tokyonight.nvim")
 
     use("nvim-treesitter/nvim-treesitter", {
         run = ":TSUpdate"
@@ -146,6 +147,206 @@ return require("packer").startup(function()
 	use {'dracula/vim', as = 'dracula'}
 	end)
 	--]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
