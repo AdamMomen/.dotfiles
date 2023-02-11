@@ -13,10 +13,14 @@ plugins=(git zsh-z zsh-autosuggestions zsh-nvm web-search)
 source $ZSH/oh-my-zsh.sh
 source ~/.zsh_profile
 
+export PYENV_ROOT="$HOME/.pyenv"
 path+=("$HOME/bin")
 path+=("/opt/homebrew/opt/go@1.18/bin")
 path+=("/opt/homebrew/opt/libpq/bin")
 export PATH
+
+command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 # The next line updates PATH for the Google Cloud SDK.
