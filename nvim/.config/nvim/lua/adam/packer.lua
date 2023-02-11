@@ -59,8 +59,8 @@ return require("packer").startup(function()
     use("mbbill/undotree")
 
     -- Colorscheme section
-    -- use("gruvbox-community/gruvbox")
-    -- use("folke/tokyonight.nvim")
+    use("gruvbox-community/gruvbox")
+    use("folke/tokyonight.nvim")
 
     use("nvim-treesitter/nvim-treesitter", {
         run = ":TSUpdate"
