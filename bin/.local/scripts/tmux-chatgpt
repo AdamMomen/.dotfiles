@@ -1,4 +1,5 @@
-#!/opt/homebrew/bin/python3
+#!/usr/bin/env python3
+
 import openai
 from os import environ, path, popen
 from pygments import highlight
@@ -33,12 +34,13 @@ def interact_with_chatgpt(api_key: str) -> None:
             lexer = RustLexer()
         else:
             lexer = PythonLexer()
+
         print(highlight(message, lexer, TerminalFormatter()))
 
         with open(history_file, "a") as f:
             f.write("\n" + message)
 
-        print("ChatGPT: ", response["choices"][0]["text"])
+        # print("ChatGPT: ", response["choices"][0]["text"])
 
 
 if __name__ == '__main__':
