@@ -3,10 +3,13 @@
 import openai
 from os import environ, path, popen
 from pygments import highlight
-from pygments.lexers import PythonLexer, RustLexer
+from pygments.lexers import PythonLexer, RustLexer, TextLexer
 from pygments.formatters import TerminalFormatter
+import readline
 
 history_file = "/tmp/history.txt"
+readline.parse_and_bind("tab: complete")
+readline.parse_and_bind("set editing-mode vi")
 
 
 def interact_with_chatgpt(api_key: str) -> None:
@@ -15,6 +18,12 @@ def interact_with_chatgpt(api_key: str) -> None:
         user_input = input("You: ")
         if user_input in ['exit', '!q', '^c', ':q']:
             break
+        if 'python' in user_input:
+            lexer = PythonLexer()
+        elif 'rust' in user_input:
+            lexer = RustLexer()
+        else:
+            lexer = TextLexer()
 
         if path.exists(history_file):
             with open(history_file, "r") as f:
@@ -23,24 +32,24 @@ def interact_with_chatgpt(api_key: str) -> None:
             history = ""
         response = openai.Completion.create(
             engine="text-davinci-003",
-            prompt=(f"You: {user_input}\n{history}"),
+            prompt=(f"{history}\n{user_input}"),
             max_tokens=2048,
             n=1,
             stop=None,
             temperature=0.5,
         )
         message = response["choices"][0]["text"]
-        if "fn main()" in message:
-            lexer = RustLexer()
-        else:
-            lexer = PythonLexer()
 
         print(highlight(message, lexer, TerminalFormatter()))
 
         with open(history_file, "a") as f:
-            f.write("\n" + message)
+            f.write(f"\n You:{user_input}\n{message}")
 
         # print("ChatGPT: ", response["choices"][0]["text"])
+
+
+def empty_file(filepath):
+    popen(f"echo ' ' > {filepath}")
 
 
 if __name__ == '__main__':
@@ -51,11 +60,12 @@ if __name__ == '__main__':
             environ["OPENAI_API_KEY"] = api_key
 
         if api_key:
-            popen(f"echo ' ' > {history_file}")
-
+            empty_file(history_file)
             interact_with_chatgpt(api_key)
+
         else:
             print("API key not found.")
+
     except Exception as e:
         print(e)
         with open(history_file, "a") as f:
