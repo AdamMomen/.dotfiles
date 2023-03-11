@@ -23,6 +23,11 @@ addToPathFront $HOME/go/bin
 # Where should I put you?
 bindkey -s ^f "tmux-sessionizer\n"
 
+if [[ -n "$SSH_CLIENT" ]] || [[ -n "$SSH_TTY" ]]; then
+  # Set the prompt for SSH sessions
+  export PS1="%n@%m:%~%# "
+fi
+
 catr() {
     tail -n "+$1" $3 | head -n "$(($2 - $1 + 1))"
 }
@@ -76,4 +81,5 @@ watchMeBaby() {
     exec=`$2 | exit 1`
     nodemon -w $files -x $exec
 }
+
 
