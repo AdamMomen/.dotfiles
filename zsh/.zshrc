@@ -4,6 +4,13 @@ HOST_NAME=batman
 ZSH_THEME="robbyrussell"
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#005f87' # check color map https://upload.wikimedia.org/wikipedia/commons/3/15/Xterm_256color_chart.svg
 
+if [[ -n "$SSH_CLIENT" ]] || [[ -n "$SSH_TTY" ]]; then
+  # Set the prompt for SSH sessions
+  export PS1="%n@%m:%~%# "
+else
+  # Set the prompt for local sessions
+  export PS1="%n@%m:%~$ "
+fi
 
 
 plugins=(git zsh-z zsh-autosuggestions zsh-nvm web-search)
