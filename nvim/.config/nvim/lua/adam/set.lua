@@ -50,3 +50,5 @@ vim.opt.wildignore = vim.opt.wildignore + "**/android/*"
 vim.opt.wildignore = vim.opt.wildignore + "**/ios/*"
 vim.opt.wildignore = vim.opt.wildignore + "**/.git/*"
 
+vim.opt.spelllang = 'en_us'
+vim.opt.spell = true

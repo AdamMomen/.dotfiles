@@ -150,6 +150,7 @@ require 'lspconfig'.cssmodules_ls.setup(config())
 require 'lspconfig'.jedi_language_server.setup(config())
 -- require 'lspconfig'.metals.setup(config())
 require 'lspconfig'.pylsp.setup(config())
+require 'lspconfig'.pyright.setup(config())
 require 'lspconfig'.grammarly.setup(config())
 require 'lspconfig'.tailwindcss.setup(config(
     {
@@ -190,7 +191,7 @@ require 'lspconfig'.tailwindcss.setup(config(
 -- who even uses this?
 require'lspconfig'.rust_analyzer.setup(config({}))
 
-require 'lspconfig'.sumneko_lua.setup(config({
+require 'lspconfig'.lua_ls.setup(config({
     settings = {
         Lua = {
             runtime = {
