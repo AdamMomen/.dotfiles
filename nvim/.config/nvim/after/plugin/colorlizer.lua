@@ -1,7 +1,0 @@
---require 'colorizer'.setup({
---  'css';
---  'javascript';
---  'typescript';
---  '!vim';
---  html = { mode = 'background' };
---}, { mode = 'foreground' })

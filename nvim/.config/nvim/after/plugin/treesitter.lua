@@ -1,10 +1,11 @@
-require 'nvim-treesitter.configs'.setup {
-    ensure_installed = "all",
-    ignore_install = { "phpdoc", "php" },
-    sync_install = false,
+require('nvim-treesitter.configs').setup {
+  ensure_installed = { "javascript", "typescript", "rust", "c", "lua", "vim", "vimdoc", "query", "python"},
 
-    highlight = {
-        enable = true,
-        additional_vim_regex_highlighting = false,
-    },
+  sync_install = false,
+
+  auto_install = true,
+  highlight = {
+    enable = true,
+    additional_vim_regex_highlighting = false,
+  },
 }
