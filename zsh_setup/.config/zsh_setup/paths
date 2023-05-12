@@ -3,4 +3,5 @@ addToPathFront $HOME/bin
 addToPathFront $HOME/.local/scripts
 addToPath /usr/local/go/bin
 addToPath $GOPATH/bin
+addToPath $HOME/.cargo/bin
 addToPath $HOME/.yarn/bin
