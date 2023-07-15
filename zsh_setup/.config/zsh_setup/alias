@@ -26,7 +26,7 @@ alias dotFileInstall="$DOTFILES/install"
 alias pjson="python -mjson.tool"
 alias killBT="rfkill block bluetooth"
 alias unKillBT="rfkill unblock bluetooth"
-#TODO Add conditional aliasing for mac and linux
+# TODO Add conditional aliasing for mac and linux
 alias cclip="pbcopy -selection clipboard"
 alias pclip="pbcopy -selection clipboard"
 
@@ -59,4 +59,3 @@ alias gs='echo ""; echo "*********************************************"; echo -e
 # ----------------------
 alias myip="curl https://ipinfo.io/json" # or /ip for plain-text ip
 alias speedtest="curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python -"
-
