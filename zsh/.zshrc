@@ -17,6 +17,7 @@ export PYENV_ROOT="$HOME/.pyenv"
 path+=("$HOME/bin")
 path+=("/opt/homebrew/opt/go@1.18/bin")
 path+=("/opt/homebrew/opt/libpq/bin")
+path+=("/Users/adam/.local/share/bob/nvim-bin")
 export PATH
 
 command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
