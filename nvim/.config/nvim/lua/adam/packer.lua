@@ -46,5 +46,6 @@ return require('packer').startup(function(use)
             "nvim-telescope/telescope.nvim"
         }
     })
-    use("f-person/git-blame.nvim")
+    -- use("f-person/git-blame.nvim")
+    use("github/copilot.vim")
 end)
