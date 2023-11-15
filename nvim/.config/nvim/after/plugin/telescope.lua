@@ -24,6 +24,8 @@ vim.keymap.set('n', '<leader>vrc', function()
 end)
 
 
+require("telescope").load_extension("harpoon")
+-- require("telescope").load_extension("git_worktrees")
 
 
 vim.keymap.set("n", "<leader>gc", function()
