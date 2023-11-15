@@ -3,6 +3,7 @@ ThePrimeagenGroup = augroup('ThePrimeagen', {})
 
 local autocmd = vim.api.nvim_create_autocmd
 local yank_group = augroup('HighlightYank', {})
+local ts_highlight_tsx = augroup('TSXHightlightTS', {})
 
 function R(name)
     require("plenary.reload").reload_module(name)
@@ -19,13 +20,14 @@ autocmd('TextYankPost', {
     end,
 })
 
-autocmd({ "BufEnter", "BufWinEnter", "TabEnter" }, {
-    group = ThePrimeagenGroup,
-    pattern = "*.rs",
+autocmd({ "BufEnter" }, {
+    pattern = '*.tsx',
+    group = ts_highlight_tsx,
     callback = function()
-        require("lsp_extensions").inlay_hints {}
-    end
+        vim.api.nvim_command(":TSBufDisable highlight")
+    end,
 })
+
 
 autocmd({ "BufWritePre" }, {
     group = ThePrimeagenGroup,
