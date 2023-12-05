@@ -16,6 +16,7 @@ source ~/.zsh_profile
 export PYENV_ROOT="$HOME/.pyenv"
 path+=("$HOME/bin")
 path+=("/opt/homebrew/opt/go@1.18/bin")
+path+=("/opt/homebrew/anaconda3/bin")
 path+=("/opt/homebrew/opt/libpq/bin")
 path+=("/Users/adam/.local/share/bob/nvim-bin")
 export PATH
