@@ -118,3 +118,14 @@ server() {
 mkcd() {
 	mkdir -p "$@" && cd "$_";
 }
+set_calendar_notf_1min() {
+    ~/projects/g-calendar-events/main.py
+}
+function random_word() {
+    python3 -c "from wonderwords import RandomWord; r = RandomWord(); print(r.word())"
+}
+
+function word_matrix() {
+    while true; do printf "`random_word` \t" ; done;
+}
+

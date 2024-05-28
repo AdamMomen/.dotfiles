@@ -25,11 +25,10 @@ end)
 
 
 require("telescope").load_extension("harpoon")
--- require("telescope").load_extension("git_worktrees")
 
 
 vim.keymap.set("n", "<leader>gc", function()
-    require('theprimeagen.telescope').git_branches()
+    require('adam.telescope').git_branches()
 end)
 vim.keymap.set("n", "<leader>gw", function()
     require('telescope').extensions.git_worktree.git_worktrees()

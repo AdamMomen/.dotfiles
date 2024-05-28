@@ -11,7 +11,7 @@ return require('packer').startup(function(use)
     use('tpope/vim-fugitive')
     use('nvim-tree/nvim-web-devicons')
 
-    -- use("thePrimeagen/git-worktree.nvim")
+    use("thePrimeagen/git-worktree.nvim")
     use("xiyaowong/telescope-emoji.nvim")
     use {
         'VonHeikemen/lsp-zero.nvim',
@@ -37,7 +37,7 @@ return require('packer').startup(function(use)
         "jackMort/ChatGPT.nvim",
         config = function()
             require("chatgpt").setup({
-                api_key_cmd = "cat ~/.chatgpt"
+                api_key_cmd = "cat ~/.config/openaiapirc  | grep secret_key | sed 's/secret_key=//'"
             })
         end,
         requires = {
@@ -48,4 +48,39 @@ return require('packer').startup(function(use)
     })
     -- use("f-person/git-blame.nvim")
     use("github/copilot.vim")
+    use {
+        "zbirenbaum/copilot.lua",
+        cmd = "Copilot",
+        event = "InsertEnter",
+        config = function()
+            require("copilot").setup({})
+        end,
+    }
+    use 'eandrju/cellular-automaton.nvim'
+    use({
+        "Bryley/neoai.nvim",
+        require = { "MunifTanjim/nui.nvim" },
+        cmd = {
+            "NeoAI",
+            "NeoAIOpen",
+            "NeoAIClose",
+            "NeoAIToggle",
+            "NeoAIContext",
+            "NeoAIContextOpen",
+            "NeoAIContextClose",
+            "NeoAIInject",
+            "NeoAIInjectCode",
+            "NeoAIInjectContext",
+            "NeoAIInjectContextCode",
+        },
+        config = function()
+            require("neoai").setup({
+                -- Options go here
+            })
+        end,
+        use { 'dccsillag/magma-nvim', run = ':UpdateRemotePlugins' }
+
+    })
+    use({ 'MunifTanjim/prettier.nvim' })
+    use({ 'jose-elias-alvarez/null-ls.nvim' })
 end)

@@ -57,3 +57,6 @@ function untar(){
 function killPort(){
     lsof -i tcp:$1 | awk 'NR!=1 {print $2}' | xargs kill
 }
+export ANDROID_HOME="$HOME/library/android/sdk"
+addToPath $ANDROID_HOME/emulator
+addToPath $ANDROID_HOME/platform-tools

@@ -5,7 +5,7 @@ vim.opt.relativenumber = true
 
 vim.opt.errorbells = false
 
-vim.opt.tabstop = 4
+vim.opt.tabstop = 2
 vim.opt.softtabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.expandtab = true
@@ -48,8 +48,10 @@ vim.opt.wildignore = vim.opt.wildignore + "**/node_modules/*"
 vim.opt.wildignore = vim.opt.wildignore + "**/android/*"
 vim.opt.wildignore = vim.opt.wildignore + "**/ios/*"
 vim.opt.wildignore = vim.opt.wildignore + "**/.git/*"
+vim.opt.wildignore = vim.opt.wildignore + "**/.history/*"
 
 vim.g.mapleader = " "
 vim.g.spelllang = 'en_us'
 vim.g.spell = true
-
+vim.g.loaded_perl_provider = 0
+vim.cmd([[autocmd BufEnter * set formatoptions-=o]])

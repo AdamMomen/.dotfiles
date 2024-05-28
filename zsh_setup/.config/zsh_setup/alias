@@ -59,3 +59,17 @@ alias gs='echo ""; echo "*********************************************"; echo -e
 # ----------------------
 alias myip="curl https://ipinfo.io/json" # or /ip for plain-text ip
 alias speedtest="curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python -"
+
+
+
+# Tmux alias
+alias t='tmux'
+alias ta='tmux a'
+alias tks='tmux kill-session -t'
+
+
+# cursor
+alias c='cursor'
+
+alias du='du -sh -- */'
+
