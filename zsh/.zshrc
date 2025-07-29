@@ -19,7 +19,7 @@ path+=("$HOME/bin")
 path+=("/opt/homebrew/opt/go@1.18/bin")
 path+=("/opt/homebrew/anaconda3/bin")
 path+=("/opt/homebrew/opt/libpq/bin")
-path+=("/Users/adam/.local/share/bob/nvim-bin")
+# path+=("/Users/adam/.local/share/bob/nvim-bin")
 export PATH
 
 command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
@@ -52,3 +52,6 @@ unset __conda_setup
 # <<< conda initialize <<<
 # .  $HOME/.sdkman/bin/sdkman-init.sh
 
+
+export EDITOR="/usr/bin/vi"
+export VISUAL="/usr/bin/vi"
