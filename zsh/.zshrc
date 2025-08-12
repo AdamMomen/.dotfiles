@@ -16,7 +16,6 @@ source ~/.zsh_profile
 
 export PYENV_ROOT="$HOME/.pyenv"
 path+=("$HOME/bin")
-path+=("/opt/homebrew/opt/go@1.18/bin")
 path+=("/opt/homebrew/anaconda3/bin")
 path+=("/opt/homebrew/opt/libpq/bin")
 # path+=("/Users/adam/.local/share/bob/nvim-bin")
@@ -53,5 +52,15 @@ unset __conda_setup
 # .  $HOME/.sdkman/bin/sdkman-init.sh
 
 
-export EDITOR="/usr/bin/vi"
-export VISUAL="/usr/bin/vi"
+export EDITOR="nvim"
+export VISUAL="nvim"
+[[ -s "/Users/adam/.gvm/scripts/gvm" ]] && source "/Users/adam/.gvm/scripts/gvm"
+export OPENAI_API_KEY=<redacted>
+export PATH="$HOME/.local/bin:$PATH"
+
+# bun completions
+[ -s "/Users/adam/.bun/_bun" ] && source "/Users/adam/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
