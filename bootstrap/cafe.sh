@@ -47,56 +47,44 @@ ensure_ansible() {
 }
 
 DOTFILES_DIR="${HOME}/.dotfiles"
-REPO_URL="https://github.com/adammomen/.dotfiles.git"
+VAULT_PASS_FILE="${VAULT_PASS_FILE:-}"
+VAULT_URL_DEFAULT="https://raw.githubusercontent.com/adammomen/.dotfiles/main/ansible/vault/ssh_pk.txt"
+VAULT_DOWNLOADED=0
 
-fetch_dotfiles() {
-  if [[ -d "${DOTFILES_DIR}/.git" || -d "${DOTFILES_DIR}" ]]; then
-    log "[cafe] Using existing ${DOTFILES_DIR}"
+# Fetch (or locate) only the encrypted vault file
+fetch_vault() {
+  # Prefer local vault if present
+  if [[ -f "${DOTFILES_DIR}/ansible/vault/ssh_pk.txt" ]]; then
+    VAULT_FILE="${DOTFILES_DIR}/ansible/vault/ssh_pk.txt"
+    log "[cafe] Using local vault at ${VAULT_FILE}"
     return
   fi
-  mkdir -p "${DOTFILES_DIR}"
-  if command -v git >/dev/null 2>&1; then
-    log "[cafe] Cloning dotfiles"
-    git clone --depth 1 "${REPO_URL}" "${DOTFILES_DIR}"
-  else
-    log "[cafe] Downloading dotfiles zip (no git)"
-    tmpzip="$(mktemp -t dotfiles.XXXXXX.zip)"
-    curl -fsSL "https://api.github.com/repos/adammomen/.dotfiles/zipball" -o "${tmpzip}"
-    tmpdir="$(mktemp -d)"
-    unzip -q "${tmpzip}" -d "${tmpdir}"
-    topdir=$(find "${tmpdir}" -mindepth 1 -maxdepth 1 -type d | head -n1)
-    shopt -s dotglob
-    mv "${topdir}"/* "${DOTFILES_DIR}" || true
-    shopt -u dotglob
-  fi
+  # Otherwise download the encrypted vault from GitHub
+  VAULT_FILE="$(mktemp -t vault.XXXXXX.txt)"
+  log "[cafe] Downloading encrypted vault"
+  curl -fsSL "${VAULT_URL_DEFAULT}" -o "${VAULT_FILE}"
+  VAULT_DOWNLOADED=1
 }
 
-write_ssh_key_with_ansible() {
+decrypt_key_into_agent() {
   if [[ "${DRY_RUN}" == "1" ]]; then
-    log "[cafe] DRY_RUN=1 set. Skipping vault decryption and key write."
+    log "[cafe] DRY_RUN=1 set. Skipping vault decrypt and ssh-agent."
     return 0
   fi
-  local play_tmp
-  play_tmp="$(mktemp -t cafe-play.XXXXXX.yml)"
-  cat >"${play_tmp}" <<'YAML'
-- hosts: localhost
-  connection: local
-  gather_facts: false
-  vars_files:
-    - ansible/vault.yml
-  tasks:
-    - name: Ensure .ssh exists
-      file:
-        path: "{{ lookup('env','HOME') }}/.ssh"
-        state: directory
-        mode: '0700'
-    - name: Write SSH private key from vault
-      copy:
-        dest: "{{ lookup('env','HOME') }}/.ssh/id_ed25519"
-        content: "{{ vps_ssh_private_key }}"
-        mode: '0600'
-YAML
-  ( cd "${DOTFILES_DIR}" && ansible-playbook "${play_tmp}" --vault-id default@prompt )
+  # Choose vault mode: passfile if provided; otherwise interactive prompt
+  local vault_id
+  if [[ -n "${VAULT_PASS_FILE}" && -f "${VAULT_PASS_FILE}" ]]; then
+    vault_id="default@file:${VAULT_PASS_FILE}"
+  else
+    vault_id="default@prompt"
+  fi
+  # Start a temporary ssh-agent and load key directly from vault output
+  eval "$(ssh-agent -s)" >/dev/null
+  trap 'ssh-agent -k >/dev/null 2>&1 || true' EXIT
+  if ! ansible-vault view --vault-id "${vault_id}" "${VAULT_FILE}" | ssh-add - >/dev/null; then
+    err "[cafe] Failed to decrypt and load SSH key"
+    exit 1
+  fi
 }
 
 connect_vps() {
@@ -104,10 +92,10 @@ connect_vps() {
   local user="root"
   if command -v ssh >/dev/null 2>&1; then
     if [[ "${DRY_RUN}" == "1" ]]; then
-      log "[cafe] DRY_RUN=1 set. Would run: ssh -t ${user}@${host} 'tmux new -A -s work'"
+      log "[cafe] DRY_RUN=1 set. Would run: ssh -t ${user}@${host} 'tmux new -A -s cafe'"
     else
       log "[cafe] Connecting to ${user}@${host} (tmux attach/create)"
-      ssh -t "${user}@${host}" 'tmux new -A -s work'
+      ssh -o IdentitiesOnly=yes -t "${user}@${host}" 'tmux new -A -s cafe'
     fi
   else
     err "[cafe] ssh client not available. Download a portable SSH client or use another host."
@@ -116,9 +104,14 @@ connect_vps() {
 
 ensure_python
 ensure_ansible
-fetch_dotfiles
-write_ssh_key_with_ansible
+fetch_vault
+decrypt_key_into_agent
 connect_vps
+
+# Cleanup any downloaded vault file
+if [[ "${VAULT_DOWNLOADED}" == "1" && -n "${VAULT_FILE:-}" && -f "${VAULT_FILE}" ]]; then
+  rm -f "${VAULT_FILE}"
+fi
 
 exit 0
 
