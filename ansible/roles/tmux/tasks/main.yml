@@ -1,4 +1,0 @@
----
-- name: Tmux role placeholder
-  debug:
-    msg: "Applying tmux role (placeholder)"

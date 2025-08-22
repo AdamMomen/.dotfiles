@@ -14,7 +14,7 @@ This repository enables fast, secure recovery of your development environment us
 ### Components
 
 - **Bootstrap scripts**
-  - `bootstrap/cafe.sh`: Minimal, user-space bootstrap for unprivileged machines. Gets Ansible, fetches repo, decrypts only required secrets, and connects to VPS.
+  - `bootstrap/cafe.sh`: Minimal, user-space bootstrap for unprivileged machines. Gets Ansible, fetches repo, decrypts only required secrets, and connects to VPS. Expects `sha_id_private_key` in `ansible/vault.yml`.
   - `bootstrap/install.sh`: Prereqs + full setup on macOS/Ubuntu. Installs packages and applies roles/playbooks.
 - **Ansible**
   - Playbooks for `bare` and `full` profiles, and OS-specific tasks.
