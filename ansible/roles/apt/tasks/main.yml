@@ -1,0 +1,17 @@
+---
+- name: Determine apt packages by profile
+  set_fact:
+    apt_selected_packages: "{{ (profile | default('bare')) == 'full' and apt_packages_full or apt_packages_bare }}"
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: (apt_selected_packages | default([])) | length > 0
+
+- name: Install apt packages
+  apt:
+    name: "{{ apt_selected_packages }}"
+    state: present
+  when: (apt_selected_packages | default([])) | length > 0
+
