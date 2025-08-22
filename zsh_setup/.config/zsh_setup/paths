@@ -1,0 +1,38 @@
+#!/usr/bin/env zsh
+
+add_to_path() {
+    if [[ -d "$1" && ":$PATH:" != *":$1:"* ]]; then
+        export PATH="$PATH:$1"
+    fi
+}
+
+add_to_path_front() {
+    if [[ -d "$1" && ":$PATH:" != *":$1:"* ]]; then
+        export PATH="$1:$PATH"
+    fi
+}
+
+# pyenv (ensure shims available early if installed)
+if [ -n "$PYENV_ROOT" ]; then
+    add_to_path_front "$PYENV_ROOT/bin"
+fi
+
+# Common macOS paths
+add_to_path "$HOME/bin"
+add_to_path "$HOME/.local/bin"
+add_to_path "$HOME/.bun/bin"
+add_to_path "/opt/homebrew/opt/libpq/bin"
+add_to_path "$HOME/.local/.npm-global/bin"
+add_to_path "$HOME/.local/go/bin"
+add_to_path "$HOME/go/bin"
+
+# Android SDK tools
+if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME" ]; then
+    add_to_path "$ANDROID_HOME/emulator"
+    add_to_path "$ANDROID_HOME/platform-tools"
+elif [ -d "$HOME/Library/Android/sdk" ]; then
+    add_to_path "$HOME/Library/Android/sdk/emulator"
+    add_to_path "$HOME/Library/Android/sdk/platform-tools"
+fi
+
+add_to_path "$HOME/.local/share/bob/nvim-bin"

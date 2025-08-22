@@ -1,0 +1,11 @@
+---
+# Shared variables and categories used across OS playbooks
+
+dotfiles_repo_url: "https://github.com/adammomen/.dotfiles.git"
+vps_host: "matrix.eveva.ai"
+vps_user: "root"
+
+# Package categories (to be populated)
+shared_cli_tools: []
+shared_dev_tools: []
+shared_fonts: []

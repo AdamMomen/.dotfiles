@@ -1,0 +1,8 @@
+---
+# macOS package selections (fill in for bare vs full)
+
+brew_formulae_bare: []
+brew_formulae_full: []
+
+brew_casks_bare: []
+brew_casks_full: []

@@ -1,0 +1,22 @@
+---
+- name: Ensure dotfiles directory exists
+  file:
+    path: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}"
+    state: directory
+
+- name: Check for stow packages
+  stat:
+    path: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}/{{ item }}"
+  loop:
+    - zsh
+    - nvim
+    - tmux
+    - bin
+  register: stow_pkg_stats
+
+- name: Run stow for existing packages
+  command: "stow -t {{ ansible_env.HOME }} {{ item.item }}"
+  args:
+    chdir: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}"
+  loop: "{{ stow_pkg_stats.results }}"
+  when: item.stat.exists

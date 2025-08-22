@@ -1,0 +1,13 @@
+---
+- name: Bare profile setup (shared minimal tools)
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  vars:
+    profile: bare
+    dotfiles_dir: "{{ ansible_env.HOME }}/.dotfiles"
+  roles:
+    - { role: stow, tags: ["stow", "dotfiles"] }
+    - { role: zsh, tags: ["shell", "zsh"] }
+    - { role: nvim, tags: ["editor", "nvim"] }
+    - { role: tmux, tags: ["terminal", "tmux"] }

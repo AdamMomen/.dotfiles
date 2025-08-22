@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+export DOTFILES="$HOME/.dotfiles"
+
+export XDG_CONFIG_HOME="$HOME/.config"
+
+export STOW_FOLDERS="bin,nvim,tmux,zsh"
+
+# Android SDK (macOS) — set env vars if the directory exists
+if [ -d "$HOME/Library/Android/sdk" ]; then
+    export ANDROID_HOME="$HOME/Library/Android/sdk"
+    export ANDROID_SDK_ROOT="$ANDROID_HOME"
+fi
+
+export PYENV_ROOT="$HOME/.pyenv"
+
+export EDITOR="nvim"
+export VISUAL="nvim"
+
+export BUN_INSTALL="$HOME/.bun"
+
+export PYTHONBREAKPOINT="pudb.set_trace"
+export GOPATH="$HOME/go"
+export GIT_EDITOR="nvim"

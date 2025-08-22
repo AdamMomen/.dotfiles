@@ -1,0 +1,4 @@
+---
+- name: Neovim role placeholder
+  debug:
+    msg: "Applying nvim role (placeholder)"
