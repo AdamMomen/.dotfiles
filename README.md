@@ -5,7 +5,7 @@ This repository enables fast, secure recovery of your development environment us
 ### Scenarios
 
 - **Internet cafe (minimal, no admin):**
-  - Entry point: `curl -fsSL https://adammomen.com/cafe | sh`
+  - Entry point: `curl -fsSL https://cafe.adammomen.com| sh`
   - Goal: Get your VPS shell (and tmux/nvim on the VPS) within minutes. Local machine remains mostly untouched.
 - **New or wiped machine (full install):**
   - Entry point: `curl -fsSL https://adammomen.com/install | bash -s -- --profile bare` (or `--profile full`)
@@ -26,7 +26,7 @@ This repository enables fast, secure recovery of your development environment us
 ### Quick start
 
 - Internet cafe:
-  1) Run: `curl -fsSL https://adammomen.com/cafe | sh`
+  1) Run: `curl -fsSL https://cafe.adammomen.com | sh`
   2) Enter Vault password when prompted. Script fetches repo and prepares SSH to `matrix.eveva.ai`.
 
 - New machine:

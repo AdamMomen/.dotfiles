@@ -5,7 +5,7 @@ log() { printf '%s\n' "$*"; }
 err() { printf '%s\n' "$*" >&2; }
 
 usage() {
-  echo "Usage: curl -fsSL https://adammomen.com/cafe | sh" >&2
+  echo "Usage: curl -fsSL https://cafe.adammomen.com | sh" >&2
 }
 
 # Test helpers: set DRY_RUN=1 to skip ansible + ssh steps
@@ -18,7 +18,7 @@ case "${uname_s}" in
   Linux|Darwin) : ;;
   MINGW*|MSYS*|CYGWIN*)
     err "[cafe] Detected Windows shell. Use PowerShell:"
-    err "  powershell -NoProfile -ExecutionPolicy Bypass -c \"iwr -useb https://adammomen.com/cafe.ps1 | iex\""
+    err "  powershell -NoProfile -ExecutionPolicy Bypass -c \"iwr -useb https://cafew.adammomen.com | iex\""
     exit 1
     ;;
   *) err "[cafe] Unsupported OS: ${uname_s}"; exit 1 ;;
@@ -48,7 +48,7 @@ ensure_ansible() {
 
 DOTFILES_DIR="${HOME}/.dotfiles"
 VAULT_PASS_FILE="${VAULT_PASS_FILE:-}"
-VAULT_URL_DEFAULT="https://raw.githubusercontent.com/adammomen/.dotfiles/main/ansible/vault/ssh_pk.txt"
+VAULT_URL_DEFAULT="https://raw.githubusercontent.com/AdamMomen/.dotfiles/refs/heads/master/ansible/vault/ssh_pk.txt"
 VAULT_DOWNLOADED=0
 
 # Fetch (or locate) only the encrypted vault file

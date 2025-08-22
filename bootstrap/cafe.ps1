@@ -1,6 +1,6 @@
 # Windows PowerShell minimal bootstrap for internet cafe scenario
 # Usage:
-#   powershell -NoProfile -ExecutionPolicy Bypass -c "iwr -useb https://adammomen.com/cafe.ps1 | iex"
+#   powershell -NoProfile -ExecutionPolicy Bypass -c "iwr -useb https://cafew.adammomen.com| iex"
 
 $ErrorActionPreference = 'Stop'
 
@@ -12,7 +12,7 @@ $DRY_RUN = $env:DRY_RUN
 if (-not $DRY_RUN) { $DRY_RUN = '0' }
 
 # New minimal flow: fetch only encrypted vault file, decrypt into ssh-agent, then connect
-$VaultUrlDefault = "https://raw.githubusercontent.com/adammomen/.dotfiles/main/ansible/vault/ssh_pk.txt"
+$VaultUrlDefault = "https://raw.githubusercontent.com/AdamMomen/.dotfiles/refs/heads/master/ansible/vault/ssh_pk.txt"
 $VaultDownloaded = $false
 $VaultFile = ""
 $VaultPassFile = $env:VAULT_PASS_FILE
