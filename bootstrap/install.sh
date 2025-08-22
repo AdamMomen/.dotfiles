@@ -17,8 +17,17 @@ DOTFILES_REPO_DEFAULT="https://github.com/adammomen/.dotfiles.git"
 DRY_RUN="${DRY_RUN:-0}"
 
 profile=""
+use_vault="${USE_VAULT:-0}"
+
+# parse args
 if [[ "${1:-}" == "--profile" && -n "${2:-}" ]]; then
-  profile="$2"
+  profile="$2"; shift 2
+fi
+if [[ "${1:-}" == "--with-vault" ]]; then
+  use_vault="1"; shift 1
+fi
+if [[ "${NO_VAULT:-}" == "1" ]]; then
+  use_vault="0"
 fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -126,10 +135,10 @@ run_ansible() {
   local runner_home="${ANSIBLE_HOME:-$HOME}"
   log "[install] Running Ansible playbook: ${playbook}"
   log "[install] Using HOME for Ansible: ${runner_home}"
-  if [[ "${NO_VAULT:-0}" == "1" ]]; then
-    ( cd "${DOTFILES_DIR}" && HOME="${runner_home}" ansible-playbook "${playbook}" )
-  else
+  if [[ "${use_vault}" == "1" ]]; then
     ( cd "${DOTFILES_DIR}" && HOME="${runner_home}" ansible-playbook "${playbook}" --vault-id default@prompt )
+  else
+    ( cd "${DOTFILES_DIR}" && HOME="${runner_home}" ansible-playbook "${playbook}" )
   fi
 }
 
