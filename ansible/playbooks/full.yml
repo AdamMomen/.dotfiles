@@ -1,0 +1,16 @@
+---
+- name: Full profile setup (complete tools)
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  vars:
+    profile: full
+  roles:
+    - { role: stow, tags: ["stow", "dotfiles"] }
+    - { role: zsh, tags: ["shell", "zsh"] }
+    - { role: nvim, tags: ["editor", "nvim"] }
+    - { role: tmux, tags: ["terminal", "tmux"] }
+    - { role: brew, when: ansible_system == 'Darwin', tags: ["brew"] }
+    - { role: yabai, when: ansible_system == 'Darwin', tags: ["yabai"] }
+    - { role: skhd, when: ansible_system == 'Darwin', tags: ["skhd"] }
+    - { role: apt, when: ansible_os_family == 'Debian', tags: ["apt"] }

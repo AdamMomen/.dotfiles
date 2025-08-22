@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  docker-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build test image
+        run: docker build -t dotfiles-test:ubuntu .
+      - name: Run quick tests
+        run: |
+          chmod +x tests/run.sh
+          ./tests/run.sh
+      - name: Run extended tests
+        run: |
+          chmod +x tests/extended.sh
+          ./tests/extended.sh
+

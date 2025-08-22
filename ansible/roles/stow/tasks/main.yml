@@ -1,0 +1,74 @@
+---
+- name: Ensure dotfiles directory exists
+  file:
+    path: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}"
+    state: directory
+
+- name: Check for stow packages
+  stat:
+    path: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}/{{ item }}"
+  loop:
+    - zsh
+    - zsh_setup
+    - nvim
+    - tmux
+    - yabai
+    - skhd
+    - karabiner
+    - bin
+  register: stow_pkg_stats
+
+- name: Run stow for existing packages
+  command: "stow -t {{ ansible_env.HOME }} {{ item.item }}"
+  args:
+    chdir: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}"
+  loop: "{{ stow_pkg_stats.results }}"
+  when: item.stat.exists
+
+- name: Verify key symlinks exist (zsh)
+  when: item.src_exists.stat.exists | default(false)
+  vars:
+    checks:
+      - dest: "{{ ansible_env.HOME }}/.zshrc"
+        src: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}/zsh/.zshrc"
+      - dest: "{{ ansible_env.HOME }}/.config/zsh_setup/env"
+        src: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}/zsh_setup/.config/zsh_setup/env"
+      - dest: "{{ ansible_env.HOME }}/.config/zsh_setup/alias"
+        src: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}/zsh_setup/.config/zsh_setup/alias"
+      - dest: "{{ ansible_env.HOME }}/.config/zsh_setup/paths"
+        src: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}/zsh_setup/.config/zsh_setup/paths"
+      - dest: "{{ ansible_env.HOME }}/.config/skhd/skhdrc"
+        src: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}/skhd/.skhdrc"
+      - dest: "{{ ansible_env.HOME }}/.yabairc"
+        src: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}/yabai/.yabairc"
+      - dest: "{{ ansible_env.HOME }}/.config/karabiner/karabiner.json"
+        src: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}/karabiner/.config/karabiner/karabiner.json"
+  block:
+    - name: Check source exists
+      stat:
+        path: "{{ item.src }}"
+      register: item_src
+      loop: "{{ checks }}"
+      loop_control:
+        loop_var: item
+
+    - name: Gather link stats (skip if src missing)
+      stat:
+        path: "{{ item.dest }}"
+        follow: false
+      register: dest_stat
+      when: item_src.results[loop.index0].stat.exists
+      loop: "{{ checks }}"
+      loop_control:
+        loop_var: item
+
+    - name: Assert symlinks point to repo (accept relative targets)
+      assert:
+        that:
+          - dest_stat.results[loop.index0].stat.islnk | default(false)
+          - (dest_stat.results[loop.index0].stat.lnk_source is regex('zsh/.zshrc$'))
+            if item.dest.endswith('/.zshrc') else
+            (dest_stat.results[loop.index0].stat.lnk_source is regex('zsh_setup/.+/(env|alias|paths)$'))
+      loop: "{{ checks }}"
+      loop_control:
+        loop_var: item

@@ -1,0 +1,5 @@
+---
+# Ubuntu package selections (fill in for bare vs full)
+
+apt_packages_bare: []
+apt_packages_full: []

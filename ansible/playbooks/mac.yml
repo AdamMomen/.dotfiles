@@ -1,0 +1,9 @@
+---
+- name: macOS setup
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  roles:
+    - { role: brew, tags: ["brew"] }
+    - { role: yabai, tags: ["yabai"] }
+    - { role: skhd, tags: ["skhd"] }
