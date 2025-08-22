@@ -11,6 +11,12 @@ Write-Log "[cafe] Windows bootstrap starting..."
 $DRY_RUN = $env:DRY_RUN
 if (-not $DRY_RUN) { $DRY_RUN = '0' }
 
+# New minimal flow: fetch only encrypted vault file, decrypt into ssh-agent, then connect
+$VaultUrlDefault = "https://raw.githubusercontent.com/adammomen/.dotfiles/main/ansible/vault/ssh_pk.txt"
+$VaultDownloaded = $false
+$VaultFile = ""
+$VaultPassFile = $env:VAULT_PASS_FILE
+
 # Ensure Python (portable if possible)
 function Ensure-Python {
   if (Get-Command python -ErrorAction SilentlyContinue) { return }
@@ -36,57 +42,44 @@ function Ensure-Pipx-Ansible {
   }
 }
 
-$Dotfiles = Join-Path $env:USERPROFILE ".dotfiles"
-$RepoZip = Join-Path $env:TEMP "dotfiles.zip"
-
-function Fetch-Dotfiles {
-  if (Test-Path $Dotfiles) { Write-Log "[cafe] Using existing $Dotfiles"; return }
-  New-Item -ItemType Directory -Force -Path $Dotfiles | Out-Null
-  try {
-    # Download zip if git absent
-    $hasGit = (Get-Command git -ErrorAction SilentlyContinue) -ne $null
-    if ($hasGit) {
-      git clone --depth 1 https://github.com/adammomen/.dotfiles.git $Dotfiles | Out-Null
-    } else {
-      Invoke-WebRequest -UseBasicParsing -Uri https://api.github.com/repos/adammomen/.dotfiles/zipball -OutFile $RepoZip
-      $tmp = New-Item -ItemType Directory -Path (Join-Path $env:TEMP (New-Guid))
-      Expand-Archive -LiteralPath $RepoZip -DestinationPath $tmp -Force
-      $top = Get-ChildItem $tmp | Where-Object { $_.PSIsContainer } | Select-Object -First 1
-      Get-ChildItem $top.FullName -Force | ForEach-Object { Move-Item -Force $_.FullName $Dotfiles }
-    }
-  } catch {
-    Write-Err "[cafe] Failed to fetch dotfiles: $_"
-    throw
+function Fetch-Vault {
+  $localVault = Join-Path $env:USERPROFILE ".dotfiles/ansible/vault/ssh_pk.txt"
+  if (Test-Path $localVault) {
+    $script:VaultFile = $localVault
+    Write-Log "[cafe] Using local vault at $VaultFile"
+    return
   }
+  $tmp = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), (New-Guid).ToString() + ".txt")
+  Write-Log "[cafe] Downloading encrypted vault"
+  Invoke-WebRequest -UseBasicParsing -Uri $VaultUrlDefault -OutFile $tmp
+  $script:VaultFile = $tmp
+  $script:VaultDownloaded = $true
 }
 
-function Write-SSH-Key-With-Ansible {
+function Decrypt-Into-Agent {
   if ($DRY_RUN -eq '1') { Write-Log "[cafe] DRY_RUN=1 set. Skipping vault/key."; return }
-  $play = @"
-- hosts: localhost
-  connection: local
-  gather_facts: false
-  vars_files:
-    - ansible/vault.yml
-  tasks:
-    - name: Ensure .ssh exists
-      file:
-        path: "{{ lookup('env','USERPROFILE') }}\\.ssh"
-        state: directory
-        mode: '0700'
-    - name: Write SSH private key from vault
-      copy:
-        dest: "{{ lookup('env','USERPROFILE') }}\\.ssh\\id_ed25519"
-        content: "{{ vps_ssh_private_key }}"
-        mode: '0600'
-"@
-  $playPath = Join-Path $env:TEMP "cafe-play.yml"
-  Set-Content -LiteralPath $playPath -Value $play -NoNewline
-  Push-Location $Dotfiles
+  $vaultId = $(if ($VaultPassFile -and (Test-Path $VaultPassFile)) { "default@file:$VaultPassFile" } else { "default@prompt" })
+  # Decrypt the vault file to a string
+  $key = ansible-vault view --vault-id $vaultId --% "$VaultFile"
+  if (-not $key) { throw "Vault decryption failed" }
+  # Ensure ssh-agent service is running
+  try { Start-Service ssh-agent -ErrorAction SilentlyContinue } catch {}
+  # Try piping to ssh-add -; if it fails, fall back to a temp file with LF newlines
+  $piped = $true
   try {
-    ansible-playbook $playPath --vault-id default@prompt
-  } finally {
-    Pop-Location
+    $proc = Start-Process -FilePath "ssh-add" -ArgumentList "-" -NoNewWindow -PassThru -RedirectStandardInput "Pipe"
+    $proc.StandardInput.Write($key)
+    $proc.StandardInput.Close()
+    $proc.WaitForExit()
+    if ($proc.ExitCode -ne 0) { $piped = $false }
+  } catch { $piped = $false }
+  if (-not $piped) {
+    $lfKey = ($key -replace "`r`n","`n").TrimEnd() + "`n"
+    $tmp = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), (New-Guid).ToString() + ".pem")
+    [System.IO.File]::WriteAllText($tmp, $lfKey, (New-Object System.Text.UTF8Encoding($false)))
+    try { icacls $tmp /inheritance:r /grant "$env:USERNAME:(R)" | Out-Null } catch {}
+    & ssh-add $tmp | Out-Null
+    Remove-Item -Force $tmp
   }
 }
 
@@ -95,10 +88,10 @@ function Connect-VPS {
   $user = "root"
   if (Get-Command ssh -ErrorAction SilentlyContinue) {
     if ($DRY_RUN -eq '1') {
-      Write-Log "[cafe] DRY_RUN=1 set. Would run: ssh -t $user@$host 'tmux new -A -s work'"
+      Write-Log "[cafe] DRY_RUN=1 set. Would run: ssh -t $user@$host 'tmux new -A -s cafe'"
     } else {
       Write-Log "[cafe] Connecting to $user@$host"
-      ssh -t "$user@$host" 'tmux new -A -s work'
+      ssh -t "$user@$host" 'tmux new -A -s cafe'
     }
   } else {
     Write-Err "[cafe] ssh not found. Install OpenSSH client from Windows Optional Features or use another host."
@@ -108,9 +101,11 @@ function Connect-VPS {
 try {
   Ensure-Python
   Ensure-Pipx-Ansible
-  Fetch-Dotfiles
-  Write-SSH-Key-With-Ansible
+  Fetch-Vault
+  Decrypt-Into-Agent
   Connect-VPS
+
+  if ($VaultDownloaded -and (Test-Path $VaultFile)) { Remove-Item -Force $VaultFile }
 } catch {
   Write-Err $_
   exit 1
