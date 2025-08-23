@@ -49,7 +49,7 @@ function Invoke-DownloadWithProgress {
   }
 }
 
-$CafeVersion = '0.3.2'
+$CafeVersion = '0.3.3'
 Write-Log "[cafe] Windows bootstrap starting... v$CafeVersion"
 $DRY_RUN = $env:DRY_RUN
 if (-not $DRY_RUN) { $DRY_RUN = '0' }
@@ -203,12 +203,57 @@ function Fetch-Vault {
 function Decrypt-Into-Agent {
   if ($DRY_RUN -eq '1') { Write-Log "[cafe] DRY_RUN=1 set. Skipping vault/key."; return }
   $vaultId = $(if ($VaultPassFile -and (Test-Path $VaultPassFile)) { "default@file:$VaultPassFile" } else { "default@prompt" })
-  # Decrypt the vault file to a string
-  $ansibleVault = Get-Command ansible-vault -ErrorAction SilentlyContinue
-  if (-not $ansibleVault) {
-    throw "ansible-vault not found in PATH"
+  $key = $null
+  # Prefer CLI when not using portable Python; otherwise fall back to Python API
+  $canUseCli = (-not $script:PortablePythonBase)
+  if ($canUseCli) {
+    try {
+      $ansibleVault = Get-Command ansible-vault -ErrorAction SilentlyContinue
+      if ($ansibleVault) {
+        Write-Log "[cafe] Decrypting via ansible-vault CLI"
+        $key = ansible-vault view --vault-id $vaultId --% "$VaultFile"
+      }
+    } catch {
+      $key = $null
+    }
   }
-  $key = ansible-vault view --vault-id $vaultId --% "$VaultFile"
+  if (-not $key) {
+    # Python API fallback (works reliably on Windows/portable envs)
+    Write-Log "[cafe] Decrypting via Python API"
+    $vaultPass = $null
+    if ($VaultPassFile -and (Test-Path $VaultPassFile)) {
+      $vaultPass = (Get-Content -Path $VaultPassFile -Raw).Trim()
+    } else {
+      $sec = Read-Host "[cafe] Enter Ansible Vault password" -AsSecureString
+      $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
+      try { $vaultPass = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) } finally { if ($bstr -ne [IntPtr]::Zero) { [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) } }
+    }
+    if (-not $vaultPass) { throw "Vault password not provided" }
+    $py = @"
+import os, sys
+from ansible.parsing.vault import VaultLib, VaultSecret
+vault_file = os.environ.get('VAULT_FILE')
+vault_password = os.environ.get('VAULT_PASSWORD', '')
+if not vault_file or not vault_password:
+    sys.exit(2)
+with open(vault_file, 'rb') as f:
+    data = f.read()
+vl = VaultLib([(b'default', VaultSecret(vault_password.encode('utf-8')))])
+plain = vl.decrypt(data)
+sys.stdout.write(plain.decode('utf-8'))
+"@
+    $tmpPy = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), (New-Guid).ToString() + ".py")
+    [System.IO.File]::WriteAllText($tmpPy, $py, (New-Object System.Text.UTF8Encoding($false)))
+    $prevFile = $env:VAULT_FILE; $prevPwd = $env:VAULT_PASSWORD
+    $env:VAULT_FILE = $VaultFile; $env:VAULT_PASSWORD = $vaultPass
+    try {
+      $key = & $script:PythonCmd $tmpPy
+    } finally {
+      Remove-Item -Force $tmpPy
+      $env:VAULT_FILE = $prevFile
+      $env:VAULT_PASSWORD = $prevPwd
+    }
+  }
   if (-not $key) { throw "Vault decryption failed" }
   # Ensure ssh-agent service is running
   try { Start-Service ssh-agent -ErrorAction SilentlyContinue } catch {}
