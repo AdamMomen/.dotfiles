@@ -7,6 +7,48 @@ $ErrorActionPreference = 'Stop'
 function Write-Log($msg) { Write-Host $msg }
 function Write-Err($msg) { Write-Error $msg }
 
+function Invoke-DownloadWithProgress {
+  param(
+    [Parameter(Mandatory=$true)] [string] $Uri,
+    [Parameter(Mandatory=$true)] [string] $OutFile,
+    [string] $Activity = "[cafe] Downloading",
+    [string] $Description = ""
+  )
+  try { Add-Type -AssemblyName System.Net.Http -ErrorAction SilentlyContinue } catch {}
+  $client = New-Object System.Net.Http.HttpClient
+  try {
+    $request = New-Object System.Net.Http.HttpRequestMessage 'Get', $Uri
+    $response = $client.SendAsync($request, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).Result
+    if (-not $response.IsSuccessStatusCode) { throw "HTTP $($response.StatusCode) for $Uri" }
+    $total = $response.Content.Headers.ContentLength
+    $inStream = $response.Content.ReadAsStreamAsync().Result
+    $dir = [System.IO.Path]::GetDirectoryName($OutFile)
+    if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
+    $outStream = [System.IO.File]::Create($OutFile)
+    try {
+      $buffer = New-Object byte[] 8192
+      $readTotal = 0L
+      while (($read = $inStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+        $outStream.Write($buffer, 0, $read)
+        $readTotal += $read
+        if ($total -and $total -gt 0) {
+          $pct = [int]([double]$readTotal / $total * 100)
+          Write-Progress -Activity $Activity -Status $Description -PercentComplete $pct
+        } else {
+          $mb = [Math]::Round($readTotal/1MB, 2)
+          Write-Progress -Activity $Activity -Status "$Description ($mb MB)" -PercentComplete -1
+        }
+      }
+    } finally {
+      if ($outStream) { $outStream.Dispose() }
+      if ($inStream) { $inStream.Dispose() }
+      Write-Progress -Activity $Activity -Completed
+    }
+  } finally {
+    if ($client) { $client.Dispose() }
+  }
+}
+
 Write-Log "[cafe] Windows bootstrap starting..."
 $DRY_RUN = $env:DRY_RUN
 if (-not $DRY_RUN) { $DRY_RUN = '0' }
@@ -17,12 +59,60 @@ $VaultDownloaded = $false
 $VaultFile = ""
 $VaultPassFile = $env:VAULT_PASS_FILE
 
-# Ensure Python (portable if possible)
+# Ensure Python (avoid WindowsApps stubs); resolve an invocable command array in $script:PythonCmd
+function Resolve-PythonCommand {
+  $candidates = @(
+    @('python'),
+    @('python3'),
+    @('py','-3'),
+    @('py')
+  )
+  foreach ($cand in $candidates) {
+    try {
+      $out = & $cand '-c' 'import sys; print(sys.version)' 2>$null
+      if ($LASTEXITCODE -eq 0 -and $out) { return $cand }
+    } catch {}
+  }
+  return $null
+}
+
+function Install-PortablePython {
+  param(
+    [string]$Version = '3.12.5'
+  )
+  try {
+    $base = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "python-embed-$Version")
+    if (-not (Test-Path $base)) { New-Item -ItemType Directory -Path $base | Out-Null }
+    $zip = Join-Path $base "python-$Version-embed-amd64.zip"
+    $url = "https://www.python.org/ftp/python/$Version/python-$Version-embed-amd64.zip"
+    Write-Log "[cafe] Downloading portable Python $Version"
+    Invoke-DownloadWithProgress -Uri $url -OutFile $zip -Activity "[cafe] Portable Python" -Description "Downloading $Version"
+    Expand-Archive -Path $zip -DestinationPath $base -Force
+    $pth = Get-ChildItem -Path $base -Filter "python*._pth" -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($pth) {
+      $content = Get-Content -Path $pth.FullName -Raw
+      $content = $content -replace '^[#\s]*import\s+site','import site'
+      Set-Content -Path $pth.FullName -Value $content -NoNewline
+    }
+    $script:PythonCmd = @(Join-Path $base 'python.exe')
+    $getPip = Join-Path $base 'get-pip.py'
+    Write-Log "[cafe] Installing pip for portable Python"
+    Invoke-DownloadWithProgress -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile $getPip -Activity "[cafe] get-pip.py" -Description "Downloading installer"
+    & $script:PythonCmd $getPip --user | Out-Null
+    Add-UserScriptsToPath
+    return $true
+  } catch {
+    Write-Err "[cafe] Portable Python install failed: $($_.Exception.Message)"
+    return $false
+  }
+}
+
 function Ensure-Python {
-  if (Get-Command python -ErrorAction SilentlyContinue) { return }
-  if (Get-Command python3 -ErrorAction SilentlyContinue) { return }
-  Write-Err "[cafe] Python not found. On kiosks, installing is blocked."
-  Write-Err "[cafe] Use your VPS from another host, or install a portable Python if allowed."
+  $script:PythonCmd = Resolve-PythonCommand
+  if ($null -ne $script:PythonCmd) { return }
+  Write-Log "[cafe] No system Python detected; attempting portable install..."
+  if (Install-PortablePython) { return }
+  Write-Err "[cafe] Python not found and portable install failed."
   throw "Python missing"
 }
 
@@ -45,19 +135,23 @@ function Add-UserScriptsToPath {
 
 function Ensure-Pipx-Ansible {
   Add-UserScriptsToPath
+  if (-not $script:PythonCmd) { $script:PythonCmd = Resolve-PythonCommand }
   $pipx = Get-Command pipx -ErrorAction SilentlyContinue
   if (-not $pipx) {
-    try { python -m pip install --user pipx | Out-Null } catch {}
+    Write-Log "[cafe] Installing pipx"
+    try { & $script:PythonCmd -m pip install --user pipx | Out-Null } catch {}
     Add-UserScriptsToPath
     $pipx = Get-Command pipx -ErrorAction SilentlyContinue
   }
   if ($pipx) {
     if (-not (Get-Command ansible-vault -ErrorAction SilentlyContinue)) {
+      Write-Log "[cafe] Installing ansible-core via pipx"
       pipx install --include-deps ansible-core | Out-Null
       Add-UserScriptsToPath
     }
   } else {
-    python -m pip install --user ansible-core | Out-Null
+    Write-Log "[cafe] Installing ansible-core via pip --user"
+    & $script:PythonCmd -m pip install --user ansible-core | Out-Null
     Add-UserScriptsToPath
   }
 }
@@ -71,7 +165,7 @@ function Fetch-Vault {
   }
   $tmp = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), (New-Guid).ToString() + ".txt")
   Write-Log "[cafe] Downloading encrypted vault"
-  Invoke-WebRequest -UseBasicParsing -Uri $VaultUrlDefault -OutFile $tmp
+  Invoke-DownloadWithProgress -Uri $VaultUrlDefault -OutFile $tmp -Activity "[cafe] Vault" -Description "Fetching ssh_pk.txt"
   $script:VaultFile = $tmp
   $script:VaultDownloaded = $true
 }
