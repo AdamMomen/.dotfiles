@@ -49,7 +49,8 @@ function Invoke-DownloadWithProgress {
   }
 }
 
-Write-Log "[cafe] Windows bootstrap starting..."
+$CafeVersion = '0.3.0'
+Write-Log "[cafe] Windows bootstrap starting... v$CafeVersion"
 $DRY_RUN = $env:DRY_RUN
 if (-not $DRY_RUN) { $DRY_RUN = '0' }
 
@@ -103,6 +104,8 @@ function Install-PortablePython {
     $getPip = Join-Path $base 'get-pip.py'
     Write-Log "[cafe] Installing pip for portable Python"
     Invoke-DownloadWithProgress -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile $getPip -Activity "[cafe] get-pip.py" -Description "Downloading installer"
+    $env:PIP_NO_WARN_SCRIPT_LOCATION = '1'
+    $env:PIP_DISABLE_PIP_VERSION_CHECK = '1'
     & $script:PythonCmd $getPip | Out-Null
     Add-UserScriptsToPath
     return $true
@@ -163,37 +166,18 @@ function Ensure-Pipx-Ansible {
       $env:Path = "$portableScripts;$env:Path"
     }
   }
-  $pipx = Get-Command pipx -ErrorAction SilentlyContinue
-  if (-not $pipx) {
-    Write-Log "[cafe] Installing pipx"
-    $pipxInstalled = $false
+  # Prefer direct install into portable Python when available; skip pipx to reduce PATH issues
+  try {
     if ($portableScripts) {
-      try { & $script:PythonCmd -m pip install --upgrade pip | Out-Null } catch {}
-      try { & $script:PythonCmd -m pip install pipx --target $portableScripts | Out-Null; $pipxInstalled = $true } catch { $pipxInstalled = $false }
+      Write-Log "[cafe] Installing ansible-core into portable Python"
+      & $script:PythonCmd -m pip install --upgrade pip | Out-Null
+      & $script:PythonCmd -m pip install ansible-core --target $portableScripts | Out-Null
+    } else {
+      Write-Log "[cafe] Installing ansible-core via pip --user"
+      & $script:PythonCmd -m pip install --user ansible-core | Out-Null
     }
-    if (-not $pipxInstalled) {
-      try { & $script:PythonCmd -m pip install --user pipx | Out-Null; $pipxInstalled = $true } catch { $pipxInstalled = $false }
-    }
-    Add-UserScriptsToPath
-    $pipx = Get-Command pipx -ErrorAction SilentlyContinue
-  }
-  if ($pipx) {
-    if (-not (Get-Command ansible-vault -ErrorAction SilentlyContinue)) {
-      Write-Log "[cafe] Installing ansible-core via pipx"
-      pipx install --include-deps ansible-core | Out-Null
-      Add-UserScriptsToPath
-    }
-  } else {
-    Write-Log "[cafe] Installing ansible-core via pip --user"
-    try {
-      if ($portableScripts) {
-        & $script:PythonCmd -m pip install ansible-core --target $portableScripts | Out-Null
-      } else {
-        & $script:PythonCmd -m pip install --user ansible-core | Out-Null
-      }
-    } catch {}
-    Add-UserScriptsToPath
-  }
+  } catch {}
+  Add-UserScriptsToPath
 }
 
 function Fetch-Vault {
