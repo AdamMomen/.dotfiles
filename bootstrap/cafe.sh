@@ -5,7 +5,7 @@ log() { printf '%s\n' "$*"; }
 err() { printf '%s\n' "$*" >&2; }
 
 usage() {
-  echo "Usage: curl -fsSL https://cafe.adammomen.com | sh" >&2
+  echo "Usage: curl -fsSL https://cafe.adammomen.com | bash" >&2
 }
 
 # Test helpers: set DRY_RUN=1 to skip ansible + ssh steps
@@ -92,10 +92,14 @@ connect_vps() {
   local user="root"
   if command -v ssh >/dev/null 2>&1; then
     if [[ "${DRY_RUN}" == "1" ]]; then
-      log "[cafe] DRY_RUN=1 set. Would run: ssh -t ${user}@${host} 'tmux new -A -s cafe'"
+      log "[cafe] DRY_RUN=1 set. Would run: ssh -tt ${user}@${host} 'tmux new -A -s cafe' < /dev/tty"
     else
       log "[cafe] Connecting to ${user}@${host} (tmux attach/create)"
-      ssh -o IdentitiesOnly=yes -t "${user}@${host}" 'tmux new -A -s cafe'
+      if [[ -e /dev/tty ]]; then
+        ssh -o IdentitiesOnly=yes -tt "${user}@${host}" 'tmux new -A -s cafe' < /dev/tty
+      else
+        ssh -o IdentitiesOnly=yes -tt "${user}@${host}" 'tmux new -A -s cafe'
+      fi
     fi
   else
     err "[cafe] ssh client not available. Download a portable SSH client or use another host."
