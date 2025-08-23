@@ -26,19 +26,39 @@ function Ensure-Python {
   throw "Python missing"
 }
 
+function Add-UserScriptsToPath {
+  $paths = @()
+  $localBin = Join-Path $env:USERPROFILE ".local\bin"
+  if (Test-Path $localBin) { $paths += $localBin }
+  $pyRoot = Join-Path $env:APPDATA "Python"
+  if (Test-Path $pyRoot) {
+    Get-ChildItem -Path $pyRoot -Directory -Filter "Python3*" -ErrorAction SilentlyContinue |
+      ForEach-Object {
+        $scripts = Join-Path $_.FullName "Scripts"
+        if (Test-Path $scripts) { $paths += $scripts }
+      }
+  }
+  foreach ($p in $paths) {
+    if ($env:Path -notlike "*$p*") { $env:Path = "$p;$env:Path" }
+  }
+}
+
 function Ensure-Pipx-Ansible {
-  $env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
+  Add-UserScriptsToPath
   $pipx = Get-Command pipx -ErrorAction SilentlyContinue
   if (-not $pipx) {
-    python -m pip install --user pipx | Out-Null
+    try { python -m pip install --user pipx | Out-Null } catch {}
+    Add-UserScriptsToPath
+    $pipx = Get-Command pipx -ErrorAction SilentlyContinue
   }
-  $pipx = Get-Command pipx -ErrorAction SilentlyContinue
   if ($pipx) {
-    if (-not (Get-Command ansible-playbook -ErrorAction SilentlyContinue)) {
+    if (-not (Get-Command ansible-vault -ErrorAction SilentlyContinue)) {
       pipx install --include-deps ansible-core | Out-Null
+      Add-UserScriptsToPath
     }
   } else {
     python -m pip install --user ansible-core | Out-Null
+    Add-UserScriptsToPath
   }
 }
 
@@ -88,10 +108,10 @@ function Connect-VPS {
   $user = "root"
   if (Get-Command ssh -ErrorAction SilentlyContinue) {
     if ($DRY_RUN -eq '1') {
-      Write-Log "[cafe] DRY_RUN=1 set. Would run: ssh -t $user@$host 'tmux new -A -s cafe'"
+      Write-Log "[cafe] DRY_RUN=1 set. Would run: ssh -tt $user@$host 'tmux new -A -s cafe'"
     } else {
       Write-Log "[cafe] Connecting to $user@$host"
-      ssh -t "$user@$host" 'tmux new -A -s cafe'
+      ssh -tt "$user@$host" 'tmux new -A -s cafe'
     }
   } else {
     Write-Err "[cafe] ssh not found. Install OpenSSH client from Windows Optional Features or use another host."
