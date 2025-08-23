@@ -1,11 +1,11 @@
 # Windows PowerShell minimal bootstrap for internet cafe scenario
 # Usage:
-#   powershell -NoProfile -ExecutionPolicy Bypass -c "iwr -useb https://cafew.adammomen.com| iex"
+#   powershell -NoProfile -ExecutionPolicy Bypass -c "iwr -useb https://cafew.adammomen.com | iex"
 
 $ErrorActionPreference = 'Stop'
 
 function Write-Log($msg) { Write-Host $msg }
-function Write-Err($msg) { Write-Error $msg }
+function Write-Err($msg) { Write-Error -Message ($msg | Out-String) }
 
 function Invoke-DownloadWithProgress {
   param(
