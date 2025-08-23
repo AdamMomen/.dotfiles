@@ -49,7 +49,7 @@ function Invoke-DownloadWithProgress {
   }
 }
 
-$CafeVersion = '0.3.3'
+$CafeVersion = '0.3.4'
 Write-Log "[cafe] Windows bootstrap starting... v$CafeVersion"
 $DRY_RUN = $env:DRY_RUN
 if (-not $DRY_RUN) { $DRY_RUN = '0' }
@@ -120,9 +120,11 @@ function Install-PortablePython {
 function Ensure-Python {
   $script:PythonCmd = Resolve-PythonCommand
   if ($null -ne $script:PythonCmd) { return }
-  Write-Log "[cafe] No system Python detected; attempting portable install..."
-  if (Install-PortablePython) { return }
-  Write-Err "[cafe] Python not found and portable install failed."
+  if ($env:CAFE_ALLOW_PORTABLE -eq '1') {
+    Write-Log "[cafe] No system Python detected; attempting portable install..."
+    if (Install-PortablePython) { return }
+  }
+  Write-Err "[cafe] Python not found. Please install: winget install --id Python.Python.3.12 -e"
   throw "Python missing"
 }
 
@@ -160,30 +162,22 @@ function Add-UserScriptsToPath {
 function Ensure-Pipx-Ansible {
   Add-UserScriptsToPath
   if (-not $script:PythonCmd) { $script:PythonCmd = Resolve-PythonCommand }
-  # If we're using portable Python, prefer installing into its Scripts so modules are importable
-  $portableScripts = $null
   if ($script:PortablePythonBase) {
-    $portableScripts = Join-Path $script:PortablePythonBase 'Scripts'
-    if ((Test-Path $portableScripts) -and ($env:Path -notlike "*$portableScripts*")) {
-      $env:Path = "$portableScripts;$env:Path"
-    }
+    Write-Err "[cafe] Portable Python detected. ansible-vault CLI requires system Python. Install Python 3.12 with winget."
+    throw "ansible-cli requires system python"
   }
-  # Prefer direct install into portable Python when available; skip pipx to reduce PATH issues
-  try {
-    if ($portableScripts) {
-      Write-Log "[cafe] Installing ansible-core into portable Python"
-      Remove-Item Env:PIP_TARGET -ErrorAction SilentlyContinue
-      Remove-Item Env:PIP_USER -ErrorAction SilentlyContinue
-      & $script:PythonCmd -m pip install --upgrade pip | Out-Null
-      & $script:PythonCmd -m pip install ansible-core | Out-Null
-    } else {
-      Write-Log "[cafe] Installing ansible-core via pip --user"
-      Remove-Item Env:PIP_TARGET -ErrorAction SilentlyContinue
-      $env:PIP_USER = '1'
-      & $script:PythonCmd -m pip install --user ansible-core | Out-Null
-    }
-  } catch {}
+  # If ansible-vault already exists, done
+  $vaultCmd = Get-Command ansible-vault -ErrorAction SilentlyContinue
+  if ($vaultCmd) { return }
+  Write-Log "[cafe] Installing ansible-core via pip --user"
+  try { & $script:PythonCmd -m pip install --disable-pip-version-check --user --upgrade pip | Out-Null } catch {}
+  try { & $script:PythonCmd -m pip install --disable-pip-version-check --user ansible-core | Out-Null } catch {}
   Add-UserScriptsToPath
+  $vaultCmd = Get-Command ansible-vault -ErrorAction SilentlyContinue
+  if (-not $vaultCmd) {
+    Write-Err "[cafe] ansible-vault not found after install. Ensure %APPDATA%\\Python\\Python3xx\\Scripts is on PATH."
+    throw "ansible-vault missing"
+  }
 }
 
 function Fetch-Vault {
@@ -203,57 +197,10 @@ function Fetch-Vault {
 function Decrypt-Into-Agent {
   if ($DRY_RUN -eq '1') { Write-Log "[cafe] DRY_RUN=1 set. Skipping vault/key."; return }
   $vaultId = $(if ($VaultPassFile -and (Test-Path $VaultPassFile)) { "default@file:$VaultPassFile" } else { "default@prompt" })
-  $key = $null
-  # Prefer CLI when not using portable Python; otherwise fall back to Python API
-  $canUseCli = (-not $script:PortablePythonBase)
-  if ($canUseCli) {
-    try {
-      $ansibleVault = Get-Command ansible-vault -ErrorAction SilentlyContinue
-      if ($ansibleVault) {
-        Write-Log "[cafe] Decrypting via ansible-vault CLI"
-        $key = ansible-vault view --vault-id $vaultId --% "$VaultFile"
-      }
-    } catch {
-      $key = $null
-    }
-  }
-  if (-not $key) {
-    # Python API fallback (works reliably on Windows/portable envs)
-    Write-Log "[cafe] Decrypting via Python API"
-    $vaultPass = $null
-    if ($VaultPassFile -and (Test-Path $VaultPassFile)) {
-      $vaultPass = (Get-Content -Path $VaultPassFile -Raw).Trim()
-    } else {
-      $sec = Read-Host "[cafe] Enter Ansible Vault password" -AsSecureString
-      $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
-      try { $vaultPass = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) } finally { if ($bstr -ne [IntPtr]::Zero) { [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) } }
-    }
-    if (-not $vaultPass) { throw "Vault password not provided" }
-    $py = @"
-import os, sys
-from ansible.parsing.vault import VaultLib, VaultSecret
-vault_file = os.environ.get('VAULT_FILE')
-vault_password = os.environ.get('VAULT_PASSWORD', '')
-if not vault_file or not vault_password:
-    sys.exit(2)
-with open(vault_file, 'rb') as f:
-    data = f.read()
-vl = VaultLib([(b'default', VaultSecret(vault_password.encode('utf-8')))])
-plain = vl.decrypt(data)
-sys.stdout.write(plain.decode('utf-8'))
-"@
-    $tmpPy = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), (New-Guid).ToString() + ".py")
-    [System.IO.File]::WriteAllText($tmpPy, $py, (New-Object System.Text.UTF8Encoding($false)))
-    $prevFile = $env:VAULT_FILE; $prevPwd = $env:VAULT_PASSWORD
-    $env:VAULT_FILE = $VaultFile; $env:VAULT_PASSWORD = $vaultPass
-    try {
-      $key = & $script:PythonCmd $tmpPy
-    } finally {
-      Remove-Item -Force $tmpPy
-      $env:VAULT_FILE = $prevFile
-      $env:VAULT_PASSWORD = $prevPwd
-    }
-  }
+  Write-Log "[cafe] Decrypting via ansible-vault CLI"
+  $ansibleVault = Get-Command ansible-vault -ErrorAction SilentlyContinue
+  if (-not $ansibleVault) { throw "ansible-vault not found in PATH" }
+  $key = ansible-vault view --vault-id $vaultId --% "$VaultFile"
   if (-not $key) { throw "Vault decryption failed" }
   # Ensure ssh-agent service is running
   try { Start-Service ssh-agent -ErrorAction SilentlyContinue } catch {}
