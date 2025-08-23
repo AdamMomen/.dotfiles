@@ -162,7 +162,7 @@ function Ensure-Pipx-Ansible {
   $portableScripts = $null
   if ($script:PortablePythonBase) {
     $portableScripts = Join-Path $script:PortablePythonBase 'Scripts'
-    if (Test-Path $portableScripts -and $env:Path -notlike "*$portableScripts*") {
+    if ((Test-Path $portableScripts) -and ($env:Path -notlike "*$portableScripts*")) {
       $env:Path = "$portableScripts;$env:Path"
     }
   }
