@@ -49,7 +49,7 @@ function Invoke-DownloadWithProgress {
   }
 }
 
-$CafeVersion = '0.3.6'
+$CafeVersion = '0.3.7'
 Write-Log "[cafe] Windows bootstrap starting... v$CafeVersion"
 $DRY_RUN = $env:DRY_RUN
 if (-not $DRY_RUN) { $DRY_RUN = '0' }
@@ -72,6 +72,43 @@ function Resolve-PythonCommand {
     try {
       $out = & $cand '-c' 'import sys; print(sys.version)' 2>$null
       if ($LASTEXITCODE -eq 0 -and $out) { return $cand }
+    } catch {}
+  }
+  # Fallback: locate python.exe in common install paths and return an explicit path
+  $found = Find-PythonExecutable
+  if ($found) { return @($found) }
+  return $null
+}
+
+function Find-PythonExecutable {
+  $paths = @()
+  if ($env:LOCALAPPDATA) {
+    $pyLocal = Join-Path $env:LOCALAPPDATA 'Programs\Python'
+    if (Test-Path $pyLocal) {
+      Get-ChildItem -Path $pyLocal -Directory -Filter 'Python3*' -ErrorAction SilentlyContinue |
+        Sort-Object -Property Name -Descending |
+        ForEach-Object {
+          $exe = Join-Path $_.FullName 'python.exe'
+          if (Test-Path $exe) { $paths += $exe }
+        }
+    }
+  }
+  if ($env:ProgramFiles) {
+    Get-ChildItem -Path $env:ProgramFiles -Directory -Filter 'Python3*' -ErrorAction SilentlyContinue |
+      ForEach-Object {
+        $exe = Join-Path $_.FullName 'python.exe'
+        if (Test-Path $exe) { $paths += $exe }
+      }
+  }
+  foreach ($p in $paths) {
+    try {
+      $out = & $p '-c' 'import sys; print(sys.version)' 2>$null
+      if ($LASTEXITCODE -eq 0 -and $out) {
+        # Prepend its Scripts dir to PATH for this session
+        $scripts = Join-Path ([System.IO.Path]::GetDirectoryName($p)) 'Scripts'
+        if (Test-Path $scripts -and $env:Path -notlike "*$scripts*") { $env:Path = "$scripts;$env:Path" }
+        return $p
+      }
     } catch {}
   }
   return $null
@@ -129,6 +166,14 @@ function Add-UserScriptsToPath {
         }
     }
   }
+  # If Resolve-PythonCommand found an explicit python.exe, ensure its Scripts is first
+  $explicitPy = $null
+  try { if ($script:PythonCmd -and ($script:PythonCmd.Count -eq 1)) { $explicitPy = $script:PythonCmd[0] } } catch {}
+  if ($explicitPy -and (Test-Path $explicitPy)) {
+    $pyDir = [System.IO.Path]::GetDirectoryName($explicitPy)
+    $pyScripts = Join-Path $pyDir 'Scripts'
+    if (Test-Path $pyScripts) { $paths = @($pyScripts) + $paths }
+  }
   foreach ($p in $paths) {
     if ($env:Path -notlike "*$p*") { $env:Path = "$p;$env:Path" }
   }
@@ -136,12 +181,14 @@ function Add-UserScriptsToPath {
 
 function Ensure-Pipx-Ansible {
   if (-not $script:PythonCmd) { $script:PythonCmd = Resolve-PythonCommand }
+  Add-UserScriptsToPath
   # If ansible-vault already exists, done
   $vaultCmd = Get-Command ansible-vault -ErrorAction SilentlyContinue
   if ($vaultCmd) { return }
   Write-Log "[cafe] Installing ansible-core via pip --user"
   try { & $script:PythonCmd -m pip install --disable-pip-version-check --user --upgrade pip | Out-Null } catch {}
   try { & $script:PythonCmd -m pip install --disable-pip-version-check --user ansible-core | Out-Null } catch {}
+  Add-UserScriptsToPath
   $vaultCmd = Get-Command ansible-vault -ErrorAction SilentlyContinue
   if (-not $vaultCmd) {
     Write-Err "[cafe] ansible-vault not found after install. Ensure %APPDATA%\\Python\\Python3xx\\Scripts is on PATH."
