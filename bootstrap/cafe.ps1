@@ -49,7 +49,7 @@ function Invoke-DownloadWithProgress {
   }
 }
 
-$CafeVersion = '0.3.4'
+$CafeVersion = '0.3.5'
 Write-Log "[cafe] Windows bootstrap starting... v$CafeVersion"
 $DRY_RUN = $env:DRY_RUN
 if (-not $DRY_RUN) { $DRY_RUN = '0' }
@@ -117,15 +117,55 @@ function Install-PortablePython {
   }
 }
 
+function Install-Python-Winget {
+  try {
+    $wg = Get-Command winget -ErrorAction SilentlyContinue
+    if (-not $wg) { return $false }
+    Write-Log "[cafe] Installing Python via winget (silent)"
+    $args = @(
+      'install','--id','Python.Python.3.12','-e','--source','winget',
+      '--silent','--accept-package-agreements','--accept-source-agreements'
+    )
+    $p = Start-Process -FilePath $wg.Source -ArgumentList $args -NoNewWindow -PassThru -Wait
+    if ($p.ExitCode -eq 0) { return $true }
+  } catch {}
+  return $false
+}
+
+function Install-Python-WebInstaller {
+  param([string]$Version = '3.12.5')
+  try {
+    $base = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "python-installer-$Version")
+    if (-not (Test-Path $base)) { New-Item -ItemType Directory -Path $base | Out-Null }
+    $exe = Join-Path $base "python-$Version-amd64.exe"
+    $url = "https://www.python.org/ftp/python/$Version/python-$Version-amd64.exe"
+    Write-Log "[cafe] Downloading Python $Version installer"
+    Invoke-DownloadWithProgress -Uri $url -OutFile $exe -Activity "[cafe] Python installer" -Description "Downloading $Version"
+    Write-Log "[cafe] Installing Python (per-user, silent)"
+    # Per-user, add to PATH, include pip and launcher
+    $installArgs = @('/quiet','InstallAllUsers=0','PrependPath=1','Include_pip=1','Include_launcher=1')
+    $p = Start-Process -FilePath $exe -ArgumentList $installArgs -NoNewWindow -PassThru -Wait
+    if ($p.ExitCode -eq 0) { return $true }
+  } catch {}
+  return $false
+}
+
 function Ensure-Python {
   $script:PythonCmd = Resolve-PythonCommand
   if ($null -ne $script:PythonCmd) { return }
-  if ($env:CAFE_ALLOW_PORTABLE -eq '1') {
-    Write-Log "[cafe] No system Python detected; attempting portable install..."
-    if (Install-PortablePython) { return }
+  # Try automatic system install: winget → python.org silent installer → optional portable
+  if (Install-Python-Winget) { $script:PythonCmd = Resolve-PythonCommand }
+  if (-not $script:PythonCmd) {
+    if (Install-Python-WebInstaller) { $script:PythonCmd = Resolve-PythonCommand }
   }
-  Write-Err "[cafe] Python not found. Please install: winget install --id Python.Python.3.12 -e"
-  throw "Python missing"
+  if (-not $script:PythonCmd -and $env:CAFE_ALLOW_PORTABLE -eq '1') {
+    Write-Log "[cafe] Trying portable Python as last resort..."
+    if (Install-PortablePython) { $script:PythonCmd = Resolve-PythonCommand }
+  }
+  if (-not $script:PythonCmd) {
+    Write-Err "[cafe] Python install failed. Manual: winget install --id Python.Python.3.12 -e"
+    throw "Python missing"
+  }
 }
 
 function Add-UserScriptsToPath {
