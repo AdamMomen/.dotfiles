@@ -49,7 +49,7 @@ function Invoke-DownloadWithProgress {
   }
 }
 
-$CafeVersion = '0.3.5'
+$CafeVersion = '0.3.6'
 Write-Log "[cafe] Windows bootstrap starting... v$CafeVersion"
 $DRY_RUN = $env:DRY_RUN
 if (-not $DRY_RUN) { $DRY_RUN = '0' }
@@ -77,46 +77,6 @@ function Resolve-PythonCommand {
   return $null
 }
 
-function Install-PortablePython {
-  param(
-    [string]$Version = '3.12.5'
-  )
-  try {
-    $base = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "python-embed-$Version")
-    if (-not (Test-Path $base)) { New-Item -ItemType Directory -Path $base | Out-Null }
-    $zip = Join-Path $base "python-$Version-embed-amd64.zip"
-    $url = "https://www.python.org/ftp/python/$Version/python-$Version-embed-amd64.zip"
-    Write-Log "[cafe] Downloading portable Python $Version"
-    Invoke-DownloadWithProgress -Uri $url -OutFile $zip -Activity "[cafe] Portable Python" -Description "Downloading $Version"
-    Expand-Archive -Path $zip -DestinationPath $base -Force
-    $pth = Get-ChildItem -Path $base -Filter "python*._pth" -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($pth) {
-      $content = Get-Content -Path $pth.FullName -Raw
-      # Enable site module loading in the embeddable distro (multi-line regex)
-      $content = $content -replace '(?m)^\s*#\s*import\s+site','import site'
-      Set-Content -Path $pth.FullName -Value $content -NoNewline
-    }
-    $script:PythonCmd = @(Join-Path $base 'python.exe')
-    $script:PortablePythonBase = $base
-    # Ensure portable Scripts dir exists and is on PATH before running get-pip
-    $portableScripts = Join-Path $base 'Scripts'
-    if (-not (Test-Path $portableScripts)) { New-Item -ItemType Directory -Path $portableScripts | Out-Null }
-    if ($env:Path -notlike "*$portableScripts*") { $env:Path = "$portableScripts;$env:Path" }
-    $getPip = Join-Path $base 'get-pip.py'
-    Write-Log "[cafe] Installing pip for portable Python"
-    Invoke-DownloadWithProgress -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile $getPip -Activity "[cafe] get-pip.py" -Description "Downloading installer"
-    $env:PIP_NO_WARN_SCRIPT_LOCATION = '1'
-    $env:PIP_DISABLE_PIP_VERSION_CHECK = '1'
-    # Run get-pip with defaults so it configures pip properly for the embed distro
-    & $script:PythonCmd $getPip | Out-Null
-    Add-UserScriptsToPath
-    return $true
-  } catch {
-    Write-Err "[cafe] Portable Python install failed: $($_.Exception.Message)"
-    return $false
-  }
-}
-
 function Install-Python-Winget {
   try {
     $wg = Get-Command winget -ErrorAction SilentlyContinue
@@ -132,38 +92,13 @@ function Install-Python-Winget {
   return $false
 }
 
-function Install-Python-WebInstaller {
-  param([string]$Version = '3.12.5')
-  try {
-    $base = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "python-installer-$Version")
-    if (-not (Test-Path $base)) { New-Item -ItemType Directory -Path $base | Out-Null }
-    $exe = Join-Path $base "python-$Version-amd64.exe"
-    $url = "https://www.python.org/ftp/python/$Version/python-$Version-amd64.exe"
-    Write-Log "[cafe] Downloading Python $Version installer"
-    Invoke-DownloadWithProgress -Uri $url -OutFile $exe -Activity "[cafe] Python installer" -Description "Downloading $Version"
-    Write-Log "[cafe] Installing Python (per-user, silent)"
-    # Per-user, add to PATH, include pip and launcher
-    $installArgs = @('/quiet','InstallAllUsers=0','PrependPath=1','Include_pip=1','Include_launcher=1')
-    $p = Start-Process -FilePath $exe -ArgumentList $installArgs -NoNewWindow -PassThru -Wait
-    if ($p.ExitCode -eq 0) { return $true }
-  } catch {}
-  return $false
-}
-
 function Ensure-Python {
   $script:PythonCmd = Resolve-PythonCommand
   if ($null -ne $script:PythonCmd) { return }
-  # Try automatic system install: winget → python.org silent installer → optional portable
+  # Install only via winget
   if (Install-Python-Winget) { $script:PythonCmd = Resolve-PythonCommand }
   if (-not $script:PythonCmd) {
-    if (Install-Python-WebInstaller) { $script:PythonCmd = Resolve-PythonCommand }
-  }
-  if (-not $script:PythonCmd -and $env:CAFE_ALLOW_PORTABLE -eq '1') {
-    Write-Log "[cafe] Trying portable Python as last resort..."
-    if (Install-PortablePython) { $script:PythonCmd = Resolve-PythonCommand }
-  }
-  if (-not $script:PythonCmd) {
-    Write-Err "[cafe] Python install failed. Manual: winget install --id Python.Python.3.12 -e"
+    Write-Err "[cafe] Python not found after winget install. Manual: winget install --id Python.Python.3.12 -e"
     throw "Python missing"
   }
 }
@@ -200,19 +135,13 @@ function Add-UserScriptsToPath {
 }
 
 function Ensure-Pipx-Ansible {
-  Add-UserScriptsToPath
   if (-not $script:PythonCmd) { $script:PythonCmd = Resolve-PythonCommand }
-  if ($script:PortablePythonBase) {
-    Write-Err "[cafe] Portable Python detected. ansible-vault CLI requires system Python. Install Python 3.12 with winget."
-    throw "ansible-cli requires system python"
-  }
   # If ansible-vault already exists, done
   $vaultCmd = Get-Command ansible-vault -ErrorAction SilentlyContinue
   if ($vaultCmd) { return }
   Write-Log "[cafe] Installing ansible-core via pip --user"
   try { & $script:PythonCmd -m pip install --disable-pip-version-check --user --upgrade pip | Out-Null } catch {}
   try { & $script:PythonCmd -m pip install --disable-pip-version-check --user ansible-core | Out-Null } catch {}
-  Add-UserScriptsToPath
   $vaultCmd = Get-Command ansible-vault -ErrorAction SilentlyContinue
   if (-not $vaultCmd) {
     Write-Err "[cafe] ansible-vault not found after install. Ensure %APPDATA%\\Python\\Python3xx\\Scripts is on PATH."
