@@ -96,24 +96,14 @@ function Install-PortablePython {
     }
     $script:PythonCmd = @(Join-Path $base 'python.exe')
     $script:PortablePythonBase = $base
+    # Ensure portable Scripts dir exists and is on PATH before running get-pip
+    $portableScripts = Join-Path $base 'Scripts'
+    if (-not (Test-Path $portableScripts)) { New-Item -ItemType Directory -Path $portableScripts | Out-Null }
+    if ($env:Path -notlike "*$portableScripts*") { $env:Path = "$portableScripts;$env:Path" }
     $getPip = Join-Path $base 'get-pip.py'
     Write-Log "[cafe] Installing pip for portable Python"
     Invoke-DownloadWithProgress -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile $getPip -Activity "[cafe] get-pip.py" -Description "Downloading installer"
-    # First try a local install into the portable base (preferred)
-    $pipOk = $false
-    try {
-      & $script:PythonCmd $getPip | Out-Null
-      $pipOk = $true
-    } catch { $pipOk = $false }
-    # If pip still not importable, fall back to --user install
-    if (-not $pipOk) {
-      try { & $script:PythonCmd $getPip --user | Out-Null; $pipOk = $true } catch { $pipOk = $false }
-    }
-    # Add likely Scripts paths to PATH
-    if (Test-Path (Join-Path $base 'Scripts')) {
-      $portableScripts = Join-Path $base 'Scripts'
-      if ($env:Path -notlike "*$portableScripts*") { $env:Path = "$portableScripts;$env:Path" }
-    }
+    & $script:PythonCmd $getPip | Out-Null
     Add-UserScriptsToPath
     return $true
   } catch {
