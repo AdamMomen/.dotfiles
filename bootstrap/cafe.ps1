@@ -95,10 +95,25 @@ function Install-PortablePython {
       Set-Content -Path $pth.FullName -Value $content -NoNewline
     }
     $script:PythonCmd = @(Join-Path $base 'python.exe')
+    $script:PortablePythonBase = $base
     $getPip = Join-Path $base 'get-pip.py'
     Write-Log "[cafe] Installing pip for portable Python"
     Invoke-DownloadWithProgress -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile $getPip -Activity "[cafe] get-pip.py" -Description "Downloading installer"
-    & $script:PythonCmd $getPip --user | Out-Null
+    # First try a local install into the portable base (preferred)
+    $pipOk = $false
+    try {
+      & $script:PythonCmd $getPip | Out-Null
+      $pipOk = $true
+    } catch { $pipOk = $false }
+    # If pip still not importable, fall back to --user install
+    if (-not $pipOk) {
+      try { & $script:PythonCmd $getPip --user | Out-Null; $pipOk = $true } catch { $pipOk = $false }
+    }
+    # Add likely Scripts paths to PATH
+    if (Test-Path (Join-Path $base 'Scripts')) {
+      $portableScripts = Join-Path $base 'Scripts'
+      if ($env:Path -notlike "*$portableScripts*") { $env:Path = "$portableScripts;$env:Path" }
+    }
     Add-UserScriptsToPath
     return $true
   } catch {
@@ -136,10 +151,25 @@ function Add-UserScriptsToPath {
 function Ensure-Pipx-Ansible {
   Add-UserScriptsToPath
   if (-not $script:PythonCmd) { $script:PythonCmd = Resolve-PythonCommand }
+  # If we're using portable Python, prefer installing into its Scripts so modules are importable
+  $portableScripts = $null
+  if ($script:PortablePythonBase) {
+    $portableScripts = Join-Path $script:PortablePythonBase 'Scripts'
+    if (Test-Path $portableScripts -and $env:Path -notlike "*$portableScripts*") {
+      $env:Path = "$portableScripts;$env:Path"
+    }
+  }
   $pipx = Get-Command pipx -ErrorAction SilentlyContinue
   if (-not $pipx) {
     Write-Log "[cafe] Installing pipx"
-    try { & $script:PythonCmd -m pip install --user pipx | Out-Null } catch {}
+    $pipxInstalled = $false
+    if ($portableScripts) {
+      try { & $script:PythonCmd -m pip install --upgrade pip | Out-Null } catch {}
+      try { & $script:PythonCmd -m pip install pipx --target $portableScripts | Out-Null; $pipxInstalled = $true } catch { $pipxInstalled = $false }
+    }
+    if (-not $pipxInstalled) {
+      try { & $script:PythonCmd -m pip install --user pipx | Out-Null; $pipxInstalled = $true } catch { $pipxInstalled = $false }
+    }
     Add-UserScriptsToPath
     $pipx = Get-Command pipx -ErrorAction SilentlyContinue
   }
@@ -151,7 +181,13 @@ function Ensure-Pipx-Ansible {
     }
   } else {
     Write-Log "[cafe] Installing ansible-core via pip --user"
-    & $script:PythonCmd -m pip install --user ansible-core | Out-Null
+    try {
+      if ($portableScripts) {
+        & $script:PythonCmd -m pip install ansible-core --target $portableScripts | Out-Null
+      } else {
+        & $script:PythonCmd -m pip install --user ansible-core | Out-Null
+      }
+    } catch {}
     Add-UserScriptsToPath
   }
 }
