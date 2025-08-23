@@ -49,7 +49,7 @@ function Invoke-DownloadWithProgress {
   }
 }
 
-$CafeVersion = '0.3.7'
+$CafeVersion = '0.3.8'
 Write-Log "[cafe] Windows bootstrap starting... v$CafeVersion"
 $DRY_RUN = $env:DRY_RUN
 if (-not $DRY_RUN) { $DRY_RUN = '0' }
@@ -124,6 +124,14 @@ function Install-Python-Winget {
       '--silent','--accept-package-agreements','--accept-source-agreements'
     )
     $p = Start-Process -FilePath $wg.Source -ArgumentList $args -NoNewWindow -PassThru -Wait
+    # Also ensure Python Launcher is present
+    try {
+      $args2 = @(
+        'install','--id','Python.Launcher','-e','--source','winget',
+        '--silent','--accept-package-agreements','--accept-source-agreements'
+      )
+      Start-Process -FilePath $wg.Source -ArgumentList $args2 -NoNewWindow -PassThru -Wait | Out-Null
+    } catch {}
     if ($p.ExitCode -eq 0) { return $true }
   } catch {}
   return $false
@@ -134,6 +142,21 @@ function Ensure-Python {
   if ($null -ne $script:PythonCmd) { return }
   # Install only via winget
   if (Install-Python-Winget) { $script:PythonCmd = Resolve-PythonCommand }
+  if (-not $script:PythonCmd) {
+    # Try to find launcher and use it to locate python
+    $pyLauncher = Get-Command py -ErrorAction SilentlyContinue
+    if ($pyLauncher) {
+      try {
+        $out = & $pyLauncher -3 -c 'import sys; print(sys.executable)'
+        if ($LASTEXITCODE -eq 0 -and $out) {
+          $exe = $out.Trim()
+          if (Test-Path $exe) {
+            $script:PythonCmd = @($exe)
+          }
+        }
+      } catch {}
+    }
+  }
   if (-not $script:PythonCmd) {
     Write-Err "[cafe] Python not found after winget install. Manual: winget install --id Python.Python.3.12 -e"
     throw "Python missing"
