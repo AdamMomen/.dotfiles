@@ -135,6 +135,9 @@ function Add-UserScriptsToPath {
   $paths = @()
   $localBin = Join-Path $env:USERPROFILE ".local\bin"
   if (Test-Path $localBin) { $paths += $localBin }
+  # Windows pipx shims
+  $pipxBin = Join-Path $env:LOCALAPPDATA "pipx\bin"
+  if ($env:LOCALAPPDATA -and (Test-Path $pipxBin)) { $paths += $pipxBin }
   $pyRoot = Join-Path $env:APPDATA "Python"
   if (Test-Path $pyRoot) {
     Get-ChildItem -Path $pyRoot -Directory -Filter "Python3*" -ErrorAction SilentlyContinue |
@@ -142,6 +145,17 @@ function Add-UserScriptsToPath {
         $scripts = Join-Path $_.FullName "Scripts"
         if (Test-Path $scripts) { $paths += $scripts }
       }
+  }
+  # Local user-install Python (Store/winget installs) Scripts path
+  if ($env:LOCALAPPDATA) {
+    $pyLocal = Join-Path $env:LOCALAPPDATA "Programs\Python"
+    if (Test-Path $pyLocal) {
+      Get-ChildItem -Path $pyLocal -Directory -Filter "Python3*" -ErrorAction SilentlyContinue |
+        ForEach-Object {
+          $scripts = Join-Path $_.FullName "Scripts"
+          if (Test-Path $scripts) { $paths += $scripts }
+        }
+    }
   }
   foreach ($p in $paths) {
     if ($env:Path -notlike "*$p*") { $env:Path = "$p;$env:Path" }
