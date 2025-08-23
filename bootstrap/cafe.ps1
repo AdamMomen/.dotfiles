@@ -92,7 +92,8 @@ function Install-PortablePython {
     $pth = Get-ChildItem -Path $base -Filter "python*._pth" -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($pth) {
       $content = Get-Content -Path $pth.FullName -Raw
-      $content = $content -replace '^[#\s]*import\s+site','import site'
+      # Enable site module loading in the embeddable distro (multi-line regex)
+      $content = $content -replace '(?m)^\s*#\s*import\s+site','import site'
       Set-Content -Path $pth.FullName -Value $content -NoNewline
     }
     $script:PythonCmd = @(Join-Path $base 'python.exe')
@@ -106,6 +107,7 @@ function Install-PortablePython {
     Invoke-DownloadWithProgress -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile $getPip -Activity "[cafe] get-pip.py" -Description "Downloading installer"
     $env:PIP_NO_WARN_SCRIPT_LOCATION = '1'
     $env:PIP_DISABLE_PIP_VERSION_CHECK = '1'
+    # Run get-pip with defaults so it configures pip properly for the embed distro
     & $script:PythonCmd $getPip | Out-Null
     Add-UserScriptsToPath
     return $true
@@ -170,10 +172,14 @@ function Ensure-Pipx-Ansible {
   try {
     if ($portableScripts) {
       Write-Log "[cafe] Installing ansible-core into portable Python"
+      Remove-Item Env:PIP_TARGET -ErrorAction SilentlyContinue
+      Remove-Item Env:PIP_USER -ErrorAction SilentlyContinue
       & $script:PythonCmd -m pip install --upgrade pip | Out-Null
-      & $script:PythonCmd -m pip install ansible-core --target $portableScripts | Out-Null
+      & $script:PythonCmd -m pip install ansible-core | Out-Null
     } else {
       Write-Log "[cafe] Installing ansible-core via pip --user"
+      Remove-Item Env:PIP_TARGET -ErrorAction SilentlyContinue
+      $env:PIP_USER = '1'
       & $script:PythonCmd -m pip install --user ansible-core | Out-Null
     }
   } catch {}
@@ -198,6 +204,10 @@ function Decrypt-Into-Agent {
   if ($DRY_RUN -eq '1') { Write-Log "[cafe] DRY_RUN=1 set. Skipping vault/key."; return }
   $vaultId = $(if ($VaultPassFile -and (Test-Path $VaultPassFile)) { "default@file:$VaultPassFile" } else { "default@prompt" })
   # Decrypt the vault file to a string
+  $ansibleVault = Get-Command ansible-vault -ErrorAction SilentlyContinue
+  if (-not $ansibleVault) {
+    throw "ansible-vault not found in PATH"
+  }
   $key = ansible-vault view --vault-id $vaultId --% "$VaultFile"
   if (-not $key) { throw "Vault decryption failed" }
   # Ensure ssh-agent service is running
