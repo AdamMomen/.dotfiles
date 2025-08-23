@@ -49,7 +49,7 @@ function Invoke-DownloadWithProgress {
   }
 }
 
-$CafeVersion = '0.3.1'
+$CafeVersion = '0.3.2'
 Write-Log "[cafe] Windows bootstrap starting... v$CafeVersion"
 $DRY_RUN = $env:DRY_RUN
 if (-not $DRY_RUN) { $DRY_RUN = '0' }
