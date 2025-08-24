@@ -9,8 +9,8 @@ function Write-Err($msg) { Write-Error -Message ($msg | Out-String) }
 
 function Invoke-DownloadWithProgress {
   param(
-    [Parameter(Mandatory=$true)] [string] $Uri,
-    [Parameter(Mandatory=$true)] [string] $OutFile,
+    [Parameter(Mandatory = $true)] [string] $Uri,
+    [Parameter(Mandatory = $true)] [string] $OutFile,
     [string] $Activity = "[cafe] Downloading",
     [string] $Description = ""
   )
@@ -34,22 +34,25 @@ function Invoke-DownloadWithProgress {
         if ($total -and $total -gt 0) {
           $pct = [int]([double]$readTotal / $total * 100)
           Write-Progress -Activity $Activity -Status $Description -PercentComplete $pct
-        } else {
-          $mb = [Math]::Round($readTotal/1MB, 2)
+        }
+        else {
+          $mb = [Math]::Round($readTotal / 1MB, 2)
           Write-Progress -Activity $Activity -Status "$Description ($mb MB)" -PercentComplete -1
         }
       }
-    } finally {
+    }
+    finally {
       if ($outStream) { $outStream.Dispose() }
       if ($inStream) { $inStream.Dispose() }
       Write-Progress -Activity $Activity -Completed
     }
-  } finally {
+  }
+  finally {
     if ($client) { $client.Dispose() }
   }
 }
 
-$CafeVersion = '0.3.8'
+$CafeVersion = '0.3.9'
 Write-Log "[cafe] Windows bootstrap starting... v$CafeVersion"
 $DRY_RUN = $env:DRY_RUN
 if (-not $DRY_RUN) { $DRY_RUN = '0' }
@@ -58,21 +61,21 @@ if (-not $DRY_RUN) { $DRY_RUN = '0' }
 $VaultUrlDefault = "https://raw.githubusercontent.com/AdamMomen/.dotfiles/refs/heads/master/ansible/vault/ssh_pk.txt"
 $VaultDownloaded = $false
 $VaultFile = ""
-$VaultPassFile = $env:VAULT_PASS_FILE
 
 # Ensure Python (avoid WindowsApps stubs); resolve an invocable command array in $script:PythonCmd
 function Resolve-PythonCommand {
   $candidates = @(
     @('python'),
     @('python3'),
-    @('py','-3'),
+    @('py', '-3'),
     @('py')
   )
   foreach ($cand in $candidates) {
     try {
       $out = & $cand '-c' 'import sys; print(sys.version)' 2>$null
       if ($LASTEXITCODE -eq 0 -and $out) { return $cand }
-    } catch {}
+    }
+    catch {}
   }
   # Fallback: locate python.exe in common install paths and return an explicit path
   $found = Find-PythonExecutable
@@ -86,19 +89,19 @@ function Find-PythonExecutable {
     $pyLocal = Join-Path $env:LOCALAPPDATA 'Programs\Python'
     if (Test-Path $pyLocal) {
       Get-ChildItem -Path $pyLocal -Directory -Filter 'Python3*' -ErrorAction SilentlyContinue |
-        Sort-Object -Property Name -Descending |
-        ForEach-Object {
-          $exe = Join-Path $_.FullName 'python.exe'
-          if (Test-Path $exe) { $paths += $exe }
-        }
-    }
-  }
-  if ($env:ProgramFiles) {
-    Get-ChildItem -Path $env:ProgramFiles -Directory -Filter 'Python3*' -ErrorAction SilentlyContinue |
+      Sort-Object -Property Name -Descending |
       ForEach-Object {
         $exe = Join-Path $_.FullName 'python.exe'
         if (Test-Path $exe) { $paths += $exe }
       }
+    }
+  }
+  if ($env:ProgramFiles) {
+    Get-ChildItem -Path $env:ProgramFiles -Directory -Filter 'Python3*' -ErrorAction SilentlyContinue |
+    ForEach-Object {
+      $exe = Join-Path $_.FullName 'python.exe'
+      if (Test-Path $exe) { $paths += $exe }
+    }
   }
   foreach ($p in $paths) {
     try {
@@ -109,7 +112,8 @@ function Find-PythonExecutable {
         if (Test-Path $scripts -and $env:Path -notlike "*$scripts*") { $env:Path = "$scripts;$env:Path" }
         return $p
       }
-    } catch {}
+    }
+    catch {}
   }
   return $null
 }
@@ -119,25 +123,27 @@ function Install-Python-Winget {
     $wg = Get-Command winget -ErrorAction SilentlyContinue
     if (-not $wg) { return $false }
     Write-Log "[cafe] Installing Python via winget (silent)"
-    $args = @(
-      'install','--id','Python.Python.3.12','-e','--source','winget',
-      '--silent','--accept-package-agreements','--accept-source-agreements'
+    $wingetArgs = @(
+      'install', '--id', 'Python.Python.3.12', '-e', '--source', 'winget',
+      '--silent', '--accept-package-agreements', '--accept-source-agreements'
     )
-    $p = Start-Process -FilePath $wg.Source -ArgumentList $args -NoNewWindow -PassThru -Wait
+    $p = Start-Process -FilePath $wg.Source -ArgumentList $wingetArgs -NoNewWindow -PassThru -Wait
     # Also ensure Python Launcher is present
     try {
-      $args2 = @(
-        'install','--id','Python.Launcher','-e','--source','winget',
-        '--silent','--accept-package-agreements','--accept-source-agreements'
+      $launcherArgs = @(
+        'install', '--id', 'Python.Launcher', '-e', '--source', 'winget',
+        '--silent', '--accept-package-agreements', '--accept-source-agreements'
       )
-      Start-Process -FilePath $wg.Source -ArgumentList $args2 -NoNewWindow -PassThru -Wait | Out-Null
-    } catch {}
+      Start-Process -FilePath $wg.Source -ArgumentList $launcherArgs -NoNewWindow -PassThru -Wait | Out-Null
+    }
+    catch {}
     if ($p.ExitCode -eq 0) { return $true }
-  } catch {}
+  }
+  catch {}
   return $false
 }
 
-function Ensure-Python {
+function Confirm-Python {
   $script:PythonCmd = Resolve-PythonCommand
   if ($null -ne $script:PythonCmd) { return }
   # Install only via winget
@@ -154,7 +160,8 @@ function Ensure-Python {
             $script:PythonCmd = @($exe)
           }
         }
-      } catch {}
+      }
+      catch {}
     }
   }
   if (-not $script:PythonCmd) {
@@ -173,20 +180,20 @@ function Add-UserScriptsToPath {
   $pyRoot = Join-Path $env:APPDATA "Python"
   if (Test-Path $pyRoot) {
     Get-ChildItem -Path $pyRoot -Directory -Filter "Python3*" -ErrorAction SilentlyContinue |
-      ForEach-Object {
-        $scripts = Join-Path $_.FullName "Scripts"
-        if (Test-Path $scripts) { $paths += $scripts }
-      }
+    ForEach-Object {
+      $scripts = Join-Path $_.FullName "Scripts"
+      if (Test-Path $scripts) { $paths += $scripts }
+    }
   }
   # Local user-install Python (Store/winget installs) Scripts path
   if ($env:LOCALAPPDATA) {
     $pyLocal = Join-Path $env:LOCALAPPDATA "Programs\Python"
     if (Test-Path $pyLocal) {
       Get-ChildItem -Path $pyLocal -Directory -Filter "Python3*" -ErrorAction SilentlyContinue |
-        ForEach-Object {
-          $scripts = Join-Path $_.FullName "Scripts"
-          if (Test-Path $scripts) { $paths += $scripts }
-        }
+      ForEach-Object {
+        $scripts = Join-Path $_.FullName "Scripts"
+        if (Test-Path $scripts) { $paths += $scripts }
+      }
     }
   }
   # If Resolve-PythonCommand found an explicit python.exe, ensure its Scripts is first
@@ -202,24 +209,18 @@ function Add-UserScriptsToPath {
   }
 }
 
-function Ensure-Pipx-Ansible {
+function Confirm-Ansible {
   if (-not $script:PythonCmd) { $script:PythonCmd = Resolve-PythonCommand }
   Add-UserScriptsToPath
-  # If ansible-vault already exists, done
-  $vaultCmd = Get-Command ansible-vault -ErrorAction SilentlyContinue
-  if ($vaultCmd) { return }
-  Write-Log "[cafe] Installing ansible-core via pip --user"
+  Write-Log "[cafe] Ensuring ansible-core and ansible-vault packages"
   try { & $script:PythonCmd -m pip install --disable-pip-version-check --user --upgrade pip | Out-Null } catch {}
-  try { & $script:PythonCmd -m pip install --disable-pip-version-check --user ansible-core | Out-Null } catch {}
+  try { & $script:PythonCmd -m pip install --disable-pip-version-check --user ansible-core ansible-vault | Out-Null } catch {}
+  # Also install a Windows-native vault CLI to avoid stdin issues on Windows
+  try { & $script:PythonCmd -m pip install --disable-pip-version-check --user ansible-vault-win | Out-Null } catch {}
   Add-UserScriptsToPath
-  $vaultCmd = Get-Command ansible-vault -ErrorAction SilentlyContinue
-  if (-not $vaultCmd) {
-    Write-Err "[cafe] ansible-vault not found after install. Ensure %APPDATA%\\Python\\Python3xx\\Scripts is on PATH."
-    throw "ansible-vault missing"
-  }
 }
 
-function Fetch-Vault {
+function Get-VaultFile {
   $localVault = Join-Path $env:USERPROFILE ".dotfiles/ansible/vault/ssh_pk.txt"
   if (Test-Path $localVault) {
     $script:VaultFile = $localVault
@@ -233,61 +234,118 @@ function Fetch-Vault {
   $script:VaultDownloaded = $true
 }
 
-function Decrypt-Into-Agent {
+function Invoke-VaultToAgent {
   if ($DRY_RUN -eq '1') { Write-Log "[cafe] DRY_RUN=1 set. Skipping vault/key."; return }
-  $vaultId = $(if ($VaultPassFile -and (Test-Path $VaultPassFile)) { "default@file:$VaultPassFile" } else { "default@prompt" })
-  Write-Log "[cafe] Decrypting via ansible-vault CLI"
-  $ansibleVault = Get-Command ansible-vault -ErrorAction SilentlyContinue
-  if (-not $ansibleVault) { throw "ansible-vault not found in PATH" }
-  $key = ansible-vault view --vault-id $vaultId --% "$VaultFile"
+  $key = $null
+  # Prefer Windows-compatible CLI first
+  $vaultCli = Get-Command ansible-vault-win -ErrorAction SilentlyContinue
+  if (-not $vaultCli) {
+    try { & $script:PythonCmd -m pip install --disable-pip-version-check --user ansible-vault-win | Out-Null } catch {}
+    Add-UserScriptsToPath
+    $vaultCli = Get-Command ansible-vault-win -ErrorAction SilentlyContinue
+  }
+  if ($vaultCli) {
+    Write-Log "[cafe] Decrypting via ansible-vault-win CLI"
+    try {
+      $key = & $vaultCli.Source 'view' '--ask-vault-pass' $VaultFile
+    }
+    catch { $key = $null }
+  }
+  else {
+    # Try Python module entrypoint for ansible-vault-win to support interactive prompt without writing to disk
+    Write-Log "[cafe] Decrypting via python -m ansible_vault_win"
+    try {
+      $pyArgs = @('-m', 'ansible_vault_win', 'view')
+      $pyArgs += '--ask-vault-pass'
+      $pyArgs += $VaultFile
+      $key = & $script:PythonCmd @pyArgs
+    }
+    catch { $key = $null }
+    if (-not $key) {
+      # Fallback: try standard ansible-vault only when a pass file is provided (interactive is broken on Windows)
+      $ansibleVault = Get-Command ansible-vault -ErrorAction SilentlyContinue
+      if (-not $ansibleVault) { throw "ansible-vault(-win) not found in PATH" }
+      Write-Log "[cafe] Decrypting via ansible-vault CLI with interactive prompt"
+      try {
+        $key = & $ansibleVault.Source 'view' '--ask-vault-pass' $VaultFile
+      }
+      catch { $key = $null }
+    }
+  }
   if (-not $key) { throw "Vault decryption failed" }
-  # Ensure ssh-agent service is running
-  try { Start-Service ssh-agent -ErrorAction SilentlyContinue } catch {}
-  # Try piping to ssh-add -; if it fails, fall back to a temp file with LF newlines
-  $piped = $true
+  # Normalize decrypted key into LF-only and extract PEM/OpenSSH block
+  if ($key -is [System.Array]) { $key = [string]::Join("`n", $key) } else { $key = [string]$key }
+  $key = ($key -replace "`r`n|`r", "`n")
+  $match = [regex]::Match($key, "(?ms)^-----BEGIN [A-Z0-9 ]+-----.*?^-----END [A-Z0-9 ]+-----\s*")
+  $keyBlock = $(if ($match.Success) { $match.Value } else { $key })
+  if (-not $keyBlock.StartsWith("-----BEGIN ")) { throw "Decryption did not return a valid private key block" }
+  if (-not $keyBlock.EndsWith("`n")) { $keyBlock += "`n" }
+  # If agent is reachable, try piping to ssh-add -; otherwise write a secure temp key for direct ssh -i
+  $agentAvailable = $false
   try {
-    $proc = Start-Process -FilePath "ssh-add" -ArgumentList "-" -NoNewWindow -PassThru -RedirectStandardInput "Pipe"
-    $proc.StandardInput.Write($key)
-    $proc.StandardInput.Close()
-    $proc.WaitForExit()
-    if ($proc.ExitCode -ne 0) { $piped = $false }
-  } catch { $piped = $false }
-  if (-not $piped) {
-    $lfKey = ($key -replace "`r`n","`n").TrimEnd() + "`n"
+    $probe = Start-Process -FilePath "ssh-add" -ArgumentList "-l" -NoNewWindow -PassThru -Wait
+    if ($probe.ExitCode -eq 0 -or $probe.ExitCode -eq 1) { $agentAvailable = $true }
+  }
+  catch { $agentAvailable = $false }
+  if ($agentAvailable) {
+    $piped = $true
+    try {
+      $proc = Start-Process -FilePath "ssh-add" -ArgumentList "-" -NoNewWindow -PassThru -RedirectStandardInput "Pipe"
+      $proc.StandardInput.Write($keyBlock)
+      $proc.StandardInput.Close()
+      $proc.WaitForExit()
+      if ($proc.ExitCode -ne 0) { $piped = $false }
+    }
+    catch { $piped = $false }
+    if (-not $piped) { $agentAvailable = $false }
+  }
+  if (-not $agentAvailable) {
+    Write-Log "[cafe] ssh-agent not available. Using temp key file."
     $tmp = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), (New-Guid).ToString() + ".pem")
-    [System.IO.File]::WriteAllText($tmp, $lfKey, (New-Object System.Text.UTF8Encoding($false)))
-    try { icacls $tmp /inheritance:r /grant "$env:USERNAME:(R)" | Out-Null } catch {}
-    & ssh-add $tmp | Out-Null
-    Remove-Item -Force $tmp
+    [System.IO.File]::WriteAllText($tmp, $keyBlock, (New-Object System.Text.UTF8Encoding($false)))
+    $script:IdentityFileTmp = $tmp
   }
 }
 
 function Connect-VPS {
-  $host = "matrix.eveva.ai"
+  $serverHost = "matrix.eveva.ai"
   $user = "root"
+  $cmd = "tmux new -A -s cafe"
   if (Get-Command ssh -ErrorAction SilentlyContinue) {
     if ($DRY_RUN -eq '1') {
-      Write-Log "[cafe] DRY_RUN=1 set. Would run: ssh -tt $user@$host 'tmux new -A -s cafe'"
-    } else {
-      Write-Log "[cafe] Connecting to $user@$host"
-      ssh -tt "$user@$host" 'tmux new -A -s cafe'
+      if ($script:IdentityFileTmp) {
+        Write-Log "[cafe] DRY_RUN=1 set. Would run: ssh -i $script:IdentityFileTmp -tt $user@$serverHost '$cmd'"
+      }
+      else {
+        Write-Log "[cafe] DRY_RUN=1 set. Would run: ssh -tt $user@$serverHost '$cmd'"
+      }
     }
-  } else {
+    else {
+      Write-Log "[cafe] Connecting to $user@$serverHost"
+      if ($script:IdentityFileTmp) {
+        ssh -i "$script:IdentityFileTmp" -tt "$user@$serverHost" "$cmd"
+      }
+      else {
+        ssh -tt "$user@$serverHost" "$cmd"
+      }
+    }
+  }
+  else {
     Write-Err "[cafe] ssh not found. Install OpenSSH client from Windows Optional Features or use another host."
   }
 }
 
 try {
-  Ensure-Python
-  Ensure-Pipx-Ansible
-  Fetch-Vault
-  Decrypt-Into-Agent
+  Confirm-Python
+  Confirm-Ansible
+  Get-VaultFile
+  Invoke-VaultToAgent
   Connect-VPS
 
   if ($VaultDownloaded -and (Test-Path $VaultFile)) { Remove-Item -Force $VaultFile }
-} catch {
+  if ($script:IdentityFileTmp -and (Test-Path $script:IdentityFileTmp)) { Remove-Item -Force $script:IdentityFileTmp }
+}
+catch {
   Write-Err $_
   exit 1
 }
-
-
