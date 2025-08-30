@@ -2,7 +2,7 @@
 
 alias vim="nvim"
 alias vi="nvim"
-
+alias pwsh="pwsh-lts"
 alias work="cd ~/work"
 alias projects="cd ~/projects"
 
