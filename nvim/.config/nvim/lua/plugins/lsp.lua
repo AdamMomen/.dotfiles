@@ -69,10 +69,9 @@ return {
             vim.lsp.config("ts_ls", {
                 capabilities = capabilities,
                 on_attach = on_attach,
-                root_dir = function(bufnr, on_dir)
+                root_dir = function(bufnr)
                     local util = require("lspconfig.util")
-                    local root = util.root_pattern("tsconfig.json", "package.json", ".git")(vim.api.nvim_buf_get_name(bufnr))
-                    on_dir(root or vim.fn.getcwd())
+                    return util.root_pattern("tsconfig.json", "package.json", ".git")(vim.api.nvim_buf_get_name(bufnr)) or vim.fn.getcwd()
                 end,
                 init_options = {
                     preferences = {

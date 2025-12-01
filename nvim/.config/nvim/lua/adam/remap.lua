@@ -1,5 +1,4 @@
--- File explorer
-vim.keymap.set("n", "<leader>e", vim.cmd.Ex, { desc = "Open netrw" })
+-- File explorer (handled by nvim-tree plugin)
 vim.keymap.set("n", "<leader>q", "<cmd>q<CR>", { desc = "Quit" })
 
 -- Move lines in visual mode
@@ -36,11 +35,11 @@ vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww tmux-sessionizer<CR>")
 vim.keymap.set("n", "<C-k>", "<cmd>cnext<CR>zz", { desc = "Next quickfix" })
 vim.keymap.set("n", "<C-j>", "<cmd>cprev<CR>zz", { desc = "Prev quickfix" })
 
--- Window navigation
-vim.keymap.set("n", "<leader>j", "<C-w>j", { desc = "Window down" })
-vim.keymap.set("n", "<leader>k", "<C-w>k", { desc = "Window up" })
-vim.keymap.set("n", "<leader>l", "<C-w>l", { desc = "Window right" })
-vim.keymap.set("n", "<leader>h", "<C-w>h", { desc = "Window left" })
+-- Window navigation (moved to different keys since harpoon uses hjkl)
+vim.keymap.set("n", "<leader>wj", "<C-w>j", { desc = "Window down" })
+vim.keymap.set("n", "<leader>wk", "<C-w>k", { desc = "Window up" })
+vim.keymap.set("n", "<leader>wl", "<C-w>l", { desc = "Window right" })
+vim.keymap.set("n", "<leader>wh", "<C-w>h", { desc = "Window left" })
 
 -- Quick access to config files
 vim.keymap.set("n", "<leader>2", "<cmd>e ~/.zshrc<CR>", { desc = "Edit .zshrc" })

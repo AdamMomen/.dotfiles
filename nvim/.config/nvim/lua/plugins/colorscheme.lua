@@ -13,6 +13,8 @@ return {
                     harpoon = true,
                     telescope = true,
                     mason = true,
+                    -- lualine = true, -- Disabled
+                    -- bufferline = true, -- Disabled
                 },
             })
             vim.cmd.colorscheme("catppuccin")

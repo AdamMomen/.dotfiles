@@ -31,6 +31,14 @@ vim.opt.isfname:append("@-@")
 vim.opt.cmdheight = 1
 vim.opt.updatetime = 50
 vim.opt.shortmess:append("c")
+-- Disable welcome screen (intro message)
+vim.opt.shortmess:append("I")
+
+-- Show statusline
+vim.opt.laststatus = 2
+
+-- Custom statusline with buffer name (left) and default info (right)
+vim.opt.statusline = "%f %=%l:%c"
 
 vim.opt.colorcolumn = "80"
 
