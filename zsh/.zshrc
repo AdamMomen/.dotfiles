@@ -41,3 +41,10 @@ fi
 # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
 export PATH="$PATH:$HOME/.rvm/bin"
 eval "$(rbenv init - zsh)"
+
+# util-linux configuration
+export LDFLAGS="-L/opt/homebrew/opt/util-linux/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/util-linux/include"
+export PKG_CONFIG_PATH="/opt/homebrew/opt/util-linux/lib/pkgconfig"
+export PATH="/opt/homebrew/opt/util-linux/bin:$PATH"
+export PATH="/opt/homebrew/opt/util-linux/sbin:$PATH"

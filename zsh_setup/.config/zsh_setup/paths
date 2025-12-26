@@ -25,6 +25,7 @@ add_to_path "/opt/homebrew/opt/libpq/bin"
 add_to_path "$HOME/.local/.npm-global/bin"
 add_to_path "$HOME/.local/go/bin"
 add_to_path "$HOME/go/bin"
+add_to_path "$HOME/.rokit/bin"
 
 # Android SDK tools
 if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME" ]; then
