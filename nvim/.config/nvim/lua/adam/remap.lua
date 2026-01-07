@@ -32,14 +32,14 @@ vim.keymap.set("n", "Q", "<nop>")
 vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww tmux-sessionizer<CR>")
 
 -- Quickfix navigation
-vim.keymap.set("n", "<C-k>", "<cmd>cnext<CR>zz", { desc = "Next quickfix" })
-vim.keymap.set("n", "<C-j>", "<cmd>cprev<CR>zz", { desc = "Prev quickfix" })
+-- vim.keymap.set("n", "<C-k>", "<cmd>cnext<CR>zz", { desc = "Next quickfix" })
+-- vim.keymap.set("n", "<C-j>", "<cmd>cprev<CR>zz", { desc = "Prev quickfix" })
 
--- Window navigation (moved to different keys since harpoon uses hjkl)
-vim.keymap.set("n", "<leader>wj", "<C-w>j", { desc = "Window down" })
-vim.keymap.set("n", "<leader>wk", "<C-w>k", { desc = "Window up" })
-vim.keymap.set("n", "<leader>wl", "<C-w>l", { desc = "Window right" })
-vim.keymap.set("n", "<leader>wh", "<C-w>h", { desc = "Window left" })
+-- Window navigation
+vim.keymap.set("n", "<leader>h", "<C-w>h", { desc = "Window left" })
+vim.keymap.set("n", "<leader>j", "<C-w>j", { desc = "Window down" })
+vim.keymap.set("n", "<leader>k", "<C-w>k", { desc = "Window up" })
+vim.keymap.set("n", "<leader>l", "<C-w>l", { desc = "Window right" })
 
 -- Quick access to config files
 vim.keymap.set("n", "<leader>2", "<cmd>e ~/.zshrc<CR>", { desc = "Edit .zshrc" })
@@ -72,21 +72,21 @@ vim.keymap.set("n", "<leader>1", "<cmd>Lazy<CR>", { desc = "Open Lazy" })
 
 -- Test icons (diagnostic command)
 vim.keymap.set("n", "<leader>ti", function()
-    local devicons = require("nvim-web-devicons")
-    local test_files = { "test.js", "test.py", "test.lua", "test.md", "test.json" }
-    local output = {}
-    table.insert(output, "Icon Test (if you see boxes or question marks, install a Nerd Font):")
-    table.insert(output, "")
-    for _, file in ipairs(test_files) do
-        local icon, color = devicons.get_icon_color(file)
-        if icon then
-            table.insert(output, string.format("%s %s (color: %s)", icon, file, color or "default"))
-        else
-            table.insert(output, string.format("? %s (no icon found)", file))
-        end
-    end
-    table.insert(output, "")
-    table.insert(output, "If icons don't show, install a Nerd Font from: https://www.nerdfonts.com/")
-    table.insert(output, "Then set it as your terminal font and restart nvim.")
-    vim.notify(table.concat(output, "\n"), vim.log.levels.INFO, { title = "Icon Test" })
+	local devicons = require("nvim-web-devicons")
+	local test_files = { "test.js", "test.py", "test.lua", "test.md", "test.json" }
+	local output = {}
+	table.insert(output, "Icon Test (if you see boxes or question marks, install a Nerd Font):")
+	table.insert(output, "")
+	for _, file in ipairs(test_files) do
+		local icon, color = devicons.get_icon_color(file)
+		if icon then
+			table.insert(output, string.format("%s %s (color: %s)", icon, file, color or "default"))
+		else
+			table.insert(output, string.format("? %s (no icon found)", file))
+		end
+	end
+	table.insert(output, "")
+	table.insert(output, "If icons don't show, install a Nerd Font from: https://www.nerdfonts.com/")
+	table.insert(output, "Then set it as your terminal font and restart nvim.")
+	vim.notify(table.concat(output, "\n"), vim.log.levels.INFO, { title = "Icon Test" })
 end, { desc = "Test icons" })

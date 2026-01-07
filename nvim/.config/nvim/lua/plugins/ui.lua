@@ -192,8 +192,8 @@ return {
                 end,
             })
 
-            -- Toggle nvim-tree with leader+e
-            vim.keymap.set("n", "<leader>e", "<cmd>NvimTreeToggle<CR>", { desc = "Toggle file explorer" })
+            -- Toggle nvim-tree with leader+e, focusing on current file
+            vim.keymap.set("n", "<leader>e", "<cmd>NvimTreeFindFileToggle<CR>", { desc = "Toggle file explorer (current file)" })
         end,
     },
 }
