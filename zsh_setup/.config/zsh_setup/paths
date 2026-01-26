@@ -20,6 +20,7 @@ fi
 # Common macOS paths
 add_to_path "$HOME/bin"
 add_to_path "$HOME/.local/bin"
+add_to_path "$HOME/.local/scripts"
 add_to_path "$HOME/.bun/bin"
 add_to_path "/opt/homebrew/opt/libpq/bin"
 add_to_path "$HOME/.local/.npm-global/bin"
