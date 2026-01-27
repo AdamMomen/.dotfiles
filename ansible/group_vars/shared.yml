@@ -1,6 +1,7 @@
 ---
 # Shared variables and categories used across OS playbooks
 
+dotfiles_dir: "{{ ansible_env.HOME }}/ghq/github.com/adammomen/.dotfiles"
 dotfiles_repo_url: "https://github.com/adammomen/.dotfiles.git"
 vps_host: "matrix.eveva.ai"
 vps_user: "root"

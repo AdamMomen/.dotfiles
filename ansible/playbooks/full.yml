@@ -13,4 +13,5 @@
     - { role: brew, when: ansible_system == 'Darwin', tags: ["brew"] }
     - { role: yabai, when: ansible_system == 'Darwin', tags: ["yabai"] }
     - { role: skhd, when: ansible_system == 'Darwin', tags: ["skhd"] }
+    - { role: iterm2, when: ansible_system == 'Darwin', tags: ["iterm2"] }
     - { role: apt, when: ansible_os_family == 'Debian', tags: ["apt"] }

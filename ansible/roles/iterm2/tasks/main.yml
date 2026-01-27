@@ -1,0 +1,16 @@
+---
+- name: Configure iTerm2 to load preferences from dotfiles
+  community.general.osx_defaults:
+    domain: com.googlecode.iterm2
+    key: PrefsCustomFolder
+    type: string
+    value: "{{ dotfiles_dir | default(ansible_env.HOME + '/.dotfiles') }}/iterm2"
+  when: ansible_system == 'Darwin'
+
+- name: Enable iTerm2 custom folder loading
+  community.general.osx_defaults:
+    domain: com.googlecode.iterm2
+    key: LoadPrefsFromCustomFolder
+    type: bool
+    value: true
+  when: ansible_system == 'Darwin'

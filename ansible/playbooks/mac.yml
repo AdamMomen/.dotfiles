@@ -7,3 +7,4 @@
     - { role: brew, tags: ["brew"] }
     - { role: yabai, tags: ["yabai"] }
     - { role: skhd, tags: ["skhd"] }
+    - { role: iterm2, tags: ["iterm2"] }
