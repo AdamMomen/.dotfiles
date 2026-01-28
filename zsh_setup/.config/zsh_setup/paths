@@ -28,10 +28,16 @@ add_to_path "$HOME/.local/go/bin"
 add_to_path "$HOME/go/bin"
 add_to_path "$HOME/.rokit/bin"
 
+# Java (Homebrew OpenJDK)
+if [ -n "$JAVA_HOME" ] && [ -d "$JAVA_HOME" ]; then
+    add_to_path_front "$JAVA_HOME/bin"
+fi
+
 # Android SDK tools
 if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME" ]; then
     add_to_path "$ANDROID_HOME/emulator"
     add_to_path "$ANDROID_HOME/platform-tools"
+    add_to_path "$ANDROID_HOME/cmdline-tools/latest/bin"
 elif [ -d "$HOME/Library/Android/sdk" ]; then
     add_to_path "$HOME/Library/Android/sdk/emulator"
     add_to_path "$HOME/Library/Android/sdk/platform-tools"

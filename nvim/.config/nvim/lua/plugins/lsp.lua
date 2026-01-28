@@ -10,8 +10,6 @@ return {
         "williamboman/mason-lspconfig.nvim",
         opts = {
             ensure_installed = { "lua_ls", "ts_ls", "eslint" },
-            -- Disable automatic enable since we're configuring manually
-            automatic_enable = false,
         },
         dependencies = {
             "williamboman/mason.nvim",
@@ -28,6 +26,7 @@ return {
             "hrsh7th/cmp-nvim-lsp",
         },
         config = function()
+            local lspconfig = require("lspconfig")
             local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
             -- Default on_attach for all LSP servers
@@ -47,7 +46,7 @@ return {
             end
 
             -- Lua LSP
-            vim.lsp.config("lua_ls", {
+            lspconfig.lua_ls.setup({
                 capabilities = capabilities,
                 on_attach = on_attach,
                 settings = {
@@ -63,33 +62,27 @@ return {
                     },
                 },
             })
-            vim.lsp.enable("lua_ls")
 
-            -- TypeScript LSP for monorepo support
-            vim.lsp.config("ts_ls", {
+            -- TypeScript LSP
+            lspconfig.ts_ls.setup({
                 capabilities = capabilities,
                 on_attach = on_attach,
-                root_dir = function(bufnr)
-                    local util = require("lspconfig.util")
-                    return util.root_pattern("tsconfig.json", "package.json", ".git")(vim.api.nvim_buf_get_name(bufnr)) or vim.fn.getcwd()
-                end,
+                root_dir = lspconfig.util.root_pattern("pnpm-workspace.yaml", "tsconfig.json", "package.json", ".git"),
                 init_options = {
                     preferences = {
                         includeCompletionsForModuleExports = true,
                     },
                 },
             })
-            vim.lsp.enable("ts_ls")
 
             -- ESLint
-            vim.lsp.config("eslint", {
+            lspconfig.eslint.setup({
                 capabilities = capabilities,
                 on_attach = on_attach,
                 settings = {
                     format = { enable = true },
                 },
             })
-            vim.lsp.enable("eslint")
 
             -- Diagnostic config
             vim.diagnostic.config({

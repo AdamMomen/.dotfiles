@@ -10,6 +10,12 @@ export STOW_FOLDERS="bin,nvim,tmux,zsh"
 if [ -d "$HOME/Library/Android/sdk" ]; then
     export ANDROID_HOME="$HOME/Library/Android/sdk"
     export ANDROID_SDK_ROOT="$ANDROID_HOME"
+    export ANDROID_AVD_HOME="$HOME/.config/.android/avd"
+fi
+
+# Java (Homebrew OpenJDK 17)
+if [ -d "/opt/homebrew/opt/openjdk@17" ]; then
+    export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
 fi
 
 export PYENV_ROOT="$HOME/.pyenv"
