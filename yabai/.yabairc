@@ -36,6 +36,39 @@ yabai -m signal --add event=window_created app="ChatGPT" action="sleep 0.5 && ya
 yabai -m signal --add event=window_created app="Codex" action="sleep 0.5 && yabai -m window \$YABAI_WINDOW_ID --space 9"
 yabai -m signal --add event=window_created app="Zoom" action="sleep 0.5 && yabai -m window \$YABAI_WINDOW_ID --space 10"
 
+# CONTINUOUS ENFORCEMENT: Monitor and correct windows that move unexpectedly
+# This fixes the "carry/movement shuffle" bug where windows jump between spaces
+
+# Function to enforce space assignments - checks and fixes all assigned apps
+enforce_spaces() {
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Brave" and .space!=1) | .id' | xargs -I {} yabai -m window {} --space 1 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Dai" and .space!=1) | .id' | xargs -I {} yabai -m window {} --space 1 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Safari" and .space!=1) | .id' | xargs -I {} yabai -m window {} --space 1 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Notion" and .space!=2) | .id' | xargs -I {} yabai -m window {} --space 2 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="iTerm2" and .space!=3) | .id' | xargs -I {} yabai -m window {} --space 3 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Cursor" and .space!=4) | .id' | xargs -I {} yabai -m window {} --space 4 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Antigravity" and .space!=4) | .id' | xargs -I {} yabai -m window {} --space 4 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Postico 2" and .space!=5) | .id' | xargs -I {} yabai -m window {} --space 5 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="NordVPN" and .space!=5) | .id' | xargs -I {} yabai -m window {} --space 5 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="System Settings" and .space!=5) | .id' | xargs -I {} yabai -m window {} --space 5 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="App Store" and .space!=5) | .id' | xargs -I {} yabai -m window {} --space 5 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Slack" and .space!=6) | .id' | xargs -I {} yabai -m window {} --space 6 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Telegram" and .space!=7) | .id' | xargs -I {} yabai -m window {} --space 7 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Discord" and .space!=7) | .id' | xargs -I {} yabai -m window {} --space 7 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Music" and .space!=8) | .id' | xargs -I {} yabai -m window {} --space 8 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Claude" and .space!=9) | .id' | xargs -I {} yabai -m window {} --space 9 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="ChatGPT" and .space!=9) | .id' | xargs -I {} yabai -m window {} --space 9 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Codex" and .space!=9) | .id' | xargs -I {} yabai -m window {} --space 9 2>/dev/null
+    yabai -m query --windows 2>/dev/null | jq -r '.[] | select(.app=="Zoom" and .space!=10) | .id' | xargs -I {} yabai -m window {} --space 10 2>/dev/null
+}
+
+# Trigger enforcement on various events that might cause window shuffling
+yabai -m signal --add event=space_changed action="enforce_spaces" label=enforce_on_space_change
+yabai -m signal --add event=display_changed action="enforce_spaces" label=enforce_on_display_change  
+yabai -m signal --add event=window_focused action="enforce_spaces" label=enforce_on_focus
+yabai -m signal --add event=application_front_switched action="enforce_spaces" label=enforce_on_app_switch
+yabai -m signal --add event=window_moved action="enforce_spaces" label=enforce_on_move
+
 # global settings
 yabai -m config mouse_follows_focus          off
 yabai -m config focus_follows_mouse          off
