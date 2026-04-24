@@ -46,9 +46,9 @@ yabai -m rule --add app="Postico 2"    space=5
 yabai -m rule --add app="NordVPN"      space=5
 yabai -m rule --add app="System Settings" space=5
 yabai -m rule --add app="App Store"    space=5
-yabai -m rule --add app="Slack"     space=6
 yabai -m rule --add app="Telegram"  space=7
 yabai -m rule --add app="Discord"   space=7
+yabai -m rule --add app="Slack"     space=7
 yabai -m rule --add app="Music"     space=8
 yabai -m rule --add app="Claude"     space=9
 yabai -m rule --add app="ChatGPT"    space=9
