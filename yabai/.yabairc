@@ -1,5 +1,11 @@
 #!/usr/bin/env sh
 
+# NOTE: On macOS Sequoia, if scripting addition fails to load with:
+#   "could not spawn remote thread: (os/kern) protection failure"
+# You need to apply the PAC ABI patch:
+#   sudo bash ~/ghq/github.com/adammomen/.dotfiles/yabai/scripts/patch-loader.sh
+# See: https://github.com/asmvik/yabai/issues/2686
+
 sudo yabai --load-sa
 yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
 
@@ -8,16 +14,11 @@ yabai -m config mouse_follows_focus          off
 yabai -m config focus_follows_mouse          off
 yabai -m config window_origin_display        default
 yabai -m config window_placement             second_child
-yabai -m config window_topmost               off
 yabai -m config window_shadow                on
 yabai -m config window_opacity               off
 yabai -m config window_opacity_duration      0.0
 yabai -m config active_window_opacity        1.0
 yabai -m config normal_window_opacity        0.80
-yabai -m config window_border                on
-yabai -m config window_border_width          1
-yabai -m config active_window_border_color   0xff775759
-yabai -m config normal_window_border_color   0xff555555
 yabai -m config insert_feedback_color        0xffd75f5f
 yabai -m config split_ratio                  0.50
 yabai -m config auto_balance                 on
@@ -35,14 +36,21 @@ yabai -m config right_padding                 0
 yabai -m config window_gap                   03
 
 yabai -m rule --add app="Brave"     space=1
-yabai -m rule --add app="Safari"    space=2
+yabai -m rule --add app="Dai"       space=1
+yabai -m rule --add app="Safari"    space=1
+yabai -m rule --add app="Notion"    space=2
 yabai -m rule --add app="iTerm2"    space=3
 yabai -m rule --add app="Cursor"    space=4
 yabai -m rule --add app="Postico 2"    space=5
+yabai -m rule --add app="NordVPN"      space=5
+yabai -m rule --add app="System Settings" space=5
+yabai -m rule --add app="App Store"    space=5
 yabai -m rule --add app="Telegram"  space=6
 yabai -m rule --add app="Slack"     space=7
+yabai -m rule --add app="Discord"   space=8
 yabai -m rule --add app="Music"     space=8
 yabai -m rule --add app="Zoom"      space=9
+yabai -m rule --add app="Claude"     space=9
 
 # Disable management for apps with tab issues
 yabai -m rule --add app="^Finder$" manage=off
