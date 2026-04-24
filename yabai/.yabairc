@@ -9,6 +9,11 @@
 sudo yabai --load-sa
 yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
 
+# Create spaces if they don't exist (ensure 10 spaces total)
+for i in {1..10}; do
+    yabai -m query --spaces --space $i &>/dev/null || yabai -m space --create
+done
+
 # global settings
 yabai -m config mouse_follows_focus          off
 yabai -m config focus_follows_mouse          off
