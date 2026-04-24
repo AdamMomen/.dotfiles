@@ -63,11 +63,13 @@ enforce_spaces() {
 }
 
 # Trigger enforcement on various events that might cause window shuffling
-yabai -m signal --add event=space_changed action="enforce_spaces" label=enforce_on_space_change
-yabai -m signal --add event=display_changed action="enforce_spaces" label=enforce_on_display_change  
-yabai -m signal --add event=window_focused action="enforce_spaces" label=enforce_on_focus
-yabai -m signal --add event=application_front_switched action="enforce_spaces" label=enforce_on_app_switch
-yabai -m signal --add event=window_moved action="enforce_spaces" label=enforce_on_move
+# Using external script because signal actions run in different shell context
+ENFORCE_SCRIPT="$HOME/ghq/github.com/adammomen/.dotfiles/yabai/scripts/enforce-spaces.sh"
+yabai -m signal --add event=space_changed action="$ENFORCE_SCRIPT" label=enforce_on_space_change
+yabai -m signal --add event=display_changed action="$ENFORCE_SCRIPT" label=enforce_on_display_change  
+yabai -m signal --add event=window_focused action="$ENFORCE_SCRIPT" label=enforce_on_focus
+yabai -m signal --add event=application_front_switched action="$ENFORCE_SCRIPT" label=enforce_on_app_switch
+yabai -m signal --add event=window_moved action="$ENFORCE_SCRIPT" label=enforce_on_move
 
 # global settings
 yabai -m config mouse_follows_focus          off
