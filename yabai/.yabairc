@@ -57,6 +57,7 @@ yabai -m rule --add app="Slack"     space=7
 yabai -m rule --add app="Music"     space=8
 yabai -m rule --add app="Claude"     space=9
 yabai -m rule --add app="ChatGPT"    space=9
+yabai -m rule --add app="Codex"      space=9
 yabai -m rule --add app="Zoom"      space=10
 
 # Disable management for apps with tab issues
